@@ -1,0 +1,45 @@
+{
+  "name": "nearai-cloud-server",
+  "private": true,
+  "version": "1.0.0",
+  "main": "dist/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/main.ts",
+    "build": "rm -rf dist && tsup",
+    "start": "node dist/main.js",
+    "lint": "eslint 'src/**/*.ts' '*.mjs' --fix",
+    "prettier": "prettier 'src/**/*.ts' '*.mjs' --write --list-different",
+    "check": "tsc",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.50.3",
+    "axios": "^1.11.0",
+    "chalk": "^5.4.1",
+    "cors": "^2.8.5",
+    "dayjs": "^1.11.13",
+    "express": "^5.1.0",
+    "express-http-context": "^2.0.1",
+    "http-errors": "^2.0.0",
+    "morgan": "^1.10.1",
+    "valibot": "^1.1.0",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.1",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/http-errors": "^2.0.5",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^20.19.4",
+    "eslint": "^9.30.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.6.2",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.35.1"
+  }
+}
