@@ -6,7 +6,7 @@ import { Auth, authMiddleware } from '../../middlewares/auth';
 import { createRouteResolver } from '../../middlewares/route-resolver';
 
 const inputSchema = v.object({
-  keyOrKeyHash: v.optional(v.string()),
+  keyOrKeyHash: v.string(),
   startDate: v.optional(v.pipe(v.string(), v.isoDate())),
   endDate: v.optional(v.pipe(v.string(), v.isoDate())),
 });

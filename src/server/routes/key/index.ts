@@ -4,6 +4,7 @@ import { updateKey } from './update-key';
 import { deleteKey } from './delete-key';
 import { getKey } from './get-key';
 import { getKeys } from './get-keys';
+import { getSpendLogs } from './get-spend-logs';
 
 export const keyRouter = express.Router();
 
@@ -12,3 +13,4 @@ keyRouter.post('/update', updateKey);
 keyRouter.post('/delete', deleteKey);
 keyRouter.get('/info', getKey);
 keyRouter.get('/list', getKeys);
+keyRouter.get('/usage', getSpendLogs);
