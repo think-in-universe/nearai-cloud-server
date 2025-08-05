@@ -47,6 +47,7 @@ export type GetUserParams = {
 export type User = {
   userId: string;
   userEmail: string | null;
+  spend: number;
 };
 
 export type GenerateKeyParams = {
@@ -96,6 +97,7 @@ export type Key = {
   maxBudget: number | null;
   budgetDuration: string | null;
   budgetResetAt: string | null;
+  createdAt: string;
 };
 
 export type ListKeysParams = {

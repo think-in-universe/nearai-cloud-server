@@ -9,6 +9,7 @@ const inputSchema = v.object({
   keyAlias: v.optional(
     v.pipe(v.string(), v.maxLength(INPUT_LIMITS.KEY_ALIAS_MAX_LENGTH)),
   ),
+  maxBudget: v.optional(v.number()),
 });
 
 const outputSchema = v.object({
@@ -30,9 +31,7 @@ export const generateKey = createRouteResolver({
       keyAlias: body.keyAlias,
       models: ['all-team-models'],
       teamId: undefined, // TODO
-      maxBudget: undefined, // TODO
-      rpmLimit: undefined, // TODO
-      tpmLimit: undefined, // TODO
+      maxBudget: body.maxBudget,
     });
 
     return {

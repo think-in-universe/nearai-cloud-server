@@ -9,6 +9,7 @@ const outputSchema = v.nullable(
   v.object({
     userId: v.string(),
     userEmail: v.nullable(v.string()),
+    spend: v.number(),
   }),
 );
 
@@ -31,6 +32,7 @@ export const getUser = createRouteResolver({
     return {
       userId: user.userId,
       userEmail: user.userEmail,
+      spend: user.spend,
     };
   },
 });

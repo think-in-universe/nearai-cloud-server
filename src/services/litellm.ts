@@ -113,8 +113,8 @@ export class Litellm {
       {
         user_info: {
           user_id?: string;
-          team_id: string | null;
           user_email: string | null;
+          spend: number;
         };
       },
       {
@@ -134,6 +134,7 @@ export class Litellm {
     return {
       userId: user_info.user_id,
       userEmail: user_info.user_email,
+      spend: user_info.spend,
     };
   }
 
@@ -244,6 +245,7 @@ export class Litellm {
             max_budget: number | null;
             budget_duration: string | null;
             budget_reset_at: string | null;
+            created_at: string;
           };
         },
         {
@@ -278,6 +280,7 @@ export class Litellm {
       maxBudget: keyInfo.info.max_budget,
       budgetDuration: keyInfo.info.budget_duration,
       budgetResetAt: keyInfo.info.budget_reset_at,
+      createdAt: keyInfo.info.created_at,
     };
   }
 
