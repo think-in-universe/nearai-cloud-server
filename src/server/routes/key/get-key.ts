@@ -25,6 +25,7 @@ const outputSchema = v.nullable(
     maxBudget: v.nullable(v.number()),
     budgetDuration: v.nullable(v.string()),
     budgetResetAt: v.nullable(v.string()),
+    blocked: v.nullable(v.boolean()),
     createdAt: v.string(),
   }),
 );
@@ -75,6 +76,7 @@ export const getKey = createRouteResolver({
         maxBudget: key.maxBudget,
         budgetDuration: key.budgetDuration,
         budgetResetAt: key.budgetResetAt,
+        blocked: key.blocked,
         createdAt: key.createdAt,
       };
     }
