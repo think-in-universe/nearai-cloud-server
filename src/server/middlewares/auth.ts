@@ -60,6 +60,58 @@ export const authMiddleware: RequestHandler = async (req, res, next) => {
   next();
 };
 
+export const litellmServiceAccountMiddleware: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  const authorization = req.headers.authorization;
+
+  if (!authorization) {
+    throwHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: 'Missing authorization token',
+    });
+  }
+
+  if (!authorization.startsWith(BEARER_TOKEN_PREFIX)) {
+    throwHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: `Authorization token must start with '${BEARER_TOKEN_PREFIX}'`,
+    });
+  }
+
+  const key = await litellm.getKey(
+    {},
+    {
+      Authorization: authorization,
+    },
+  );
+
+  if (!key) {
+    throwHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: 'Invalid authorization token',
+    });
+  }
+
+  if (!key.metadata.service_account_id) {
+    throwHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: 'Only service account can access this endpoint',
+    });
+  }
+
+  if (key.blocked) {
+    throwHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: 'Service account is blocked',
+    });
+  }
+
+  next();
+};
+
 async function authorizeSupabase(
   authorization?: string,
 ): Promise<SupabaseUser> {

@@ -17,6 +17,8 @@ import {
   SpendLog,
   GetUserParams,
   GetKeyParams,
+  ManageUserParams,
+  KeyMetadata,
 } from '../types/litellm';
 import { config } from '../config';
 import axios, { Axios, AxiosError } from 'axios';
@@ -114,6 +116,7 @@ export class Litellm {
         user_info: {
           user_id?: string;
           user_email: string | null;
+          max_budget: number;
           spend: number;
         };
       },
@@ -134,8 +137,28 @@ export class Litellm {
     return {
       userId: user_info.user_id,
       userEmail: user_info.user_email,
+      maxBudget: user_info.max_budget,
       spend: user_info.spend,
     };
+  }
+
+  /**
+   * Update user budget. The function should only be called by service account.
+   */
+  async manageUser({ userId, maxBudget }: ManageUserParams) {
+    await this.post<
+      void,
+      {
+        user_id: string;
+        max_budget: number;
+      }
+    >({
+      path: '/user/update',
+      body: {
+        user_id: userId,
+        max_budget: maxBudget,
+      },
+    });
   }
 
   async generateKey({
@@ -224,7 +247,10 @@ export class Litellm {
     });
   }
 
-  async getKey({ keyOrKeyHash }: GetKeyParams): Promise<Key | null> {
+  async getKey(
+    { keyOrKeyHash }: GetKeyParams,
+    headers?: Record<string, string>,
+  ): Promise<Key | null> {
     let keyInfo;
 
     try {
@@ -247,16 +273,18 @@ export class Litellm {
             budget_reset_at: string | null;
             blocked: boolean | null;
             created_at: string;
+            metadata: KeyMetadata;
           };
         },
         {
-          key: string;
+          key: string | undefined;
         }
       >({
         path: '/key/info',
         params: {
           key: keyOrKeyHash,
         },
+        headers,
       });
     } catch (e: unknown) {
       if (e instanceof AxiosError && e.status === 404) {
@@ -283,6 +311,7 @@ export class Litellm {
       budgetResetAt: keyInfo.info.budget_reset_at,
       blocked: keyInfo.info.blocked,
       createdAt: keyInfo.info.created_at,
+      metadata: keyInfo.info.metadata,
     };
   }
 
