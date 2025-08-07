@@ -46,13 +46,13 @@ export type GetUserParams = {
 
 export type ManageUserParams = {
   userId: string;
-  maxBudget: number;
+  maxBudget: number | null; // null means unlimited
 };
 
 export type User = {
   userId: string;
   userEmail: string | null;
-  maxBudget: number;
+  maxBudget: number | null; // null means unlimited
   spend: number;
 };
 

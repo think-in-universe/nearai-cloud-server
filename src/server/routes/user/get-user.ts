@@ -9,7 +9,7 @@ const outputSchema = v.nullable(
   v.object({
     userId: v.string(),
     userEmail: v.nullable(v.string()),
-    maxBudget: v.number(),
+    maxBudget: v.nullable(v.number()),
     spend: v.number(),
   }),
 );

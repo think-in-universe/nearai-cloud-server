@@ -96,6 +96,7 @@ export class Litellm {
       {
         user_id?: string;
         user_email?: string;
+        max_budget?: number;
         auto_create_key?: boolean;
         user_role?: string;
       }
@@ -104,6 +105,7 @@ export class Litellm {
       body: {
         user_id: userId,
         user_email: userEmail,
+        max_budget: 0, // no budget when user is registered until user purchases credits
         auto_create_key: false,
         user_role: 'internal_user_viewer',
       },
@@ -116,7 +118,7 @@ export class Litellm {
         user_info: {
           user_id?: string;
           user_email: string | null;
-          max_budget: number;
+          max_budget: number | null;
           spend: number;
         };
       },
@@ -150,7 +152,7 @@ export class Litellm {
       void,
       {
         user_id: string;
-        max_budget: number;
+        max_budget: number | null;
       }
     >({
       path: '/user/update',

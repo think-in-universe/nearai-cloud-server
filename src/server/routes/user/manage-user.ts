@@ -5,7 +5,7 @@ import { createRouteResolver } from '../../middlewares/route-resolver';
 
 const inputSchema = v.object({
   userId: v.string(),
-  maxBudget: v.number(),
+  maxBudget: v.nullable(v.number()),
 });
 
 export const manageUser = createRouteResolver({
