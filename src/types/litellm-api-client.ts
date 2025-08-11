@@ -72,7 +72,7 @@ export type Key = {
   metadata: KeyMetadata;
 };
 
-export type KeyMetadata = Record<string, string>; // TODO: Maybe `Record<string, unknown>` or a more specific type
+export type KeyMetadata = Record<string, unknown>; // TODO: Maybe a more specific type
 
 export type ListKeysParams = {
   userId: string;

@@ -43,7 +43,7 @@ const outputSchema = v.object({
       budgetResetAt: v.nullable(v.string()),
       blocked: v.nullable(v.boolean()),
       createdAt: v.string(),
-      metadata: v.record(v.string(), v.string()),
+      metadata: v.record(v.string(), v.unknown()),
     }),
   ),
   totalKeys: v.number(),
