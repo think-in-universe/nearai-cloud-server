@@ -1,11 +1,12 @@
 import ctx from 'express-http-context';
 import * as v from 'valibot';
-import { litellm } from '../../../services/litellm';
+import { adminLitellmApiClient } from '../../../services/litellm-api-client';
 import { CTX_GLOBAL_KEYS, STATUS_CODES } from '../../../utils/consts';
 import { Auth, authMiddleware } from '../../middlewares/auth';
-import { throwHttpError } from '../../../utils/error';
+import { createOpenAiHttpError } from '../../../utils/error';
 import { createRouteResolver } from '../../middlewares/route-resolver';
-import { Key } from '../../../types/litellm';
+import { Key } from '../../../types/litellm-api-client';
+import { toShortKeyAlias } from '../../../utils/common';
 
 const inputSchema = v.object({
   keyOrKeyHash: v.string(),
@@ -27,6 +28,7 @@ const outputSchema = v.nullable(
     budgetResetAt: v.nullable(v.string()),
     blocked: v.nullable(v.boolean()),
     createdAt: v.string(),
+    metadata: v.record(v.string(), v.string()),
   }),
 );
 
@@ -40,12 +42,12 @@ export const getKey = createRouteResolver({
     async (req, res, next, { query }) => {
       const { user }: Auth = ctx.get(CTX_GLOBAL_KEYS.AUTH);
 
-      const key = await litellm.getKey({
+      const key = await adminLitellmApiClient.getKey({
         keyOrKeyHash: query.keyOrKeyHash,
       });
 
       if (key && key.userId !== user.userId) {
-        throwHttpError({
+        throw createOpenAiHttpError({
           status: STATUS_CODES.FORBIDDEN,
           message:
             'No permission to access the key that is owned by other users',
@@ -66,7 +68,10 @@ export const getKey = createRouteResolver({
       return {
         keyOrKeyHash: key.keyOrKeyHash,
         keyName: key.keyName,
-        keyAlias: key.keyAlias,
+        keyAlias:
+          key.userId && key.keyAlias
+            ? toShortKeyAlias(key.userId, key.keyAlias)
+            : key.keyAlias,
         spend: key.spend,
         expires: key.expires,
         userId: key.userId,
@@ -78,6 +83,7 @@ export const getKey = createRouteResolver({
         budgetResetAt: key.budgetResetAt,
         blocked: key.blocked,
         createdAt: key.createdAt,
+        metadata: key.metadata,
       };
     }
   },

@@ -1,6 +1,6 @@
 import ctx from 'express-http-context';
 import * as v from 'valibot';
-import { litellm } from '../../../services/litellm';
+import { adminLitellmApiClient } from '../../../services/litellm-api-client';
 import {
   CTX_GLOBAL_KEYS,
   INPUT_LIMITS,
@@ -8,7 +8,8 @@ import {
 } from '../../../utils/consts';
 import { Auth, authMiddleware } from '../../middlewares/auth';
 import { createRouteResolver } from '../../middlewares/route-resolver';
-import { throwHttpError } from '../../../utils/error';
+import { createOpenAiHttpError } from '../../../utils/error';
+import { toFullKeyAlias } from '../../../utils/common';
 
 const inputSchema = v.object({
   keyOrKeyHash: v.string(),
@@ -28,19 +29,19 @@ export const updateKey = createRouteResolver({
     async (req, res, next, { body }) => {
       const { user }: Auth = ctx.get(CTX_GLOBAL_KEYS.AUTH);
 
-      const key = await litellm.getKey({
+      const key = await adminLitellmApiClient.getKey({
         keyOrKeyHash: body.keyOrKeyHash,
       });
 
       if (!key) {
-        throwHttpError({
+        throw createOpenAiHttpError({
           status: STATUS_CODES.BAD_REQUEST,
           message: 'Cannot update a key that does not exist',
         });
       }
 
       if (key.userId !== user.userId) {
-        throwHttpError({
+        throw createOpenAiHttpError({
           status: STATUS_CODES.FORBIDDEN,
           message:
             'No permission to access the key that is owned by other users',
@@ -51,9 +52,13 @@ export const updateKey = createRouteResolver({
     },
   ],
   resolve: async ({ inputs: { body } }) => {
-    await litellm.updateKey({
+    const { user }: Auth = ctx.get(CTX_GLOBAL_KEYS.AUTH);
+
+    await adminLitellmApiClient.updateKey({
       keyOrKeyHash: body.keyOrKeyHash,
-      keyAlias: body.keyAlias,
+      keyAlias: body.keyAlias
+        ? toFullKeyAlias(user.userId, body.keyAlias)
+        : undefined,
       maxBudget: body.maxBudget,
       blocked: body.blocked,
     });

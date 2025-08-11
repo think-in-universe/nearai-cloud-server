@@ -6,6 +6,8 @@ import {
   ENV_SLACK_WEBHOOK_URL,
   ENV_LITELLM_API_URL,
   ENV_LITELLM_ADMIN_KEY,
+  ENV_LITELLM_DB_URL,
+  ENV_LITELLM_SIGNING_KEY,
 } from '../utils/envs';
 
 const config: Config = {
@@ -17,6 +19,8 @@ const config: Config = {
   litellm: {
     apiUrl: ENV_LITELLM_API_URL,
     adminKey: ENV_LITELLM_ADMIN_KEY,
+    dbUrl: ENV_LITELLM_DB_URL,
+    signingKey: ENV_LITELLM_SIGNING_KEY,
   },
   log: {
     level: 'debug',

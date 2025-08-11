@@ -7,7 +7,7 @@ import {
   createOutgoingLogMiddleware,
 } from './middlewares/log';
 import {
-  createHttpErrorMiddleware,
+  createOpenAiHttpErrorMiddleware,
   createExposeErrorMiddleware,
 } from './middlewares/error';
 import { router } from './routes';
@@ -29,7 +29,7 @@ export function runServer() {
   app.use(router);
 
   app.use(
-    createHttpErrorMiddleware({
+    createOpenAiHttpErrorMiddleware({
       isDev: config.isDev,
     }),
   );

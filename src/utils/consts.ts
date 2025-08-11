@@ -22,6 +22,7 @@ export const STATUS_CODES = {
 export const CTX_GLOBAL_KEYS = {
   SUPABASE_AUTH: 'global:supabase-auth',
   AUTH: 'global:auth',
+  KEY_AUTH: 'global:key-auth',
   INPUT: {
     PARAMS: 'global:params-input',
     QUERY: 'global:query-input',

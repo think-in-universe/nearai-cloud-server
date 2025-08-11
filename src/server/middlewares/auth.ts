@@ -7,9 +7,13 @@ import {
   STATUS_CODES,
 } from '../../utils/consts';
 import { createSupabaseClient } from '../../services/supabase';
-import { throwHttpError } from '../../utils/error';
-import { litellm } from '../../services/litellm';
-import { User } from '../../types/litellm';
+import { createOpenAiHttpError } from '../../utils/error';
+import {
+  adminLitellmApiClient,
+  createLitellmApiClient,
+  LitellmApiClient,
+} from '../../services/litellm-api-client';
+import { Key, User } from '../../types/litellm-api-client';
 
 export type SupabaseAuth = {
   supabaseUser: SupabaseUser;
@@ -20,38 +24,37 @@ export type Auth = {
   user: User;
 };
 
+export type KeyAuth = {
+  key: Key;
+  litellmApiClient: LitellmApiClient;
+};
+
 export const supabaseAuthMiddleware: RequestHandler = async (
   req,
   res,
   next,
 ) => {
-  const authUser = await authorizeSupabase(req.headers.authorization);
-
-  const supabaseAuth: SupabaseAuth = {
-    supabaseUser: authUser,
-  };
-
+  const supabaseAuth = await authorizeSupabase(req.headers.authorization);
   ctx.set(CTX_GLOBAL_KEYS.SUPABASE_AUTH, supabaseAuth);
-
   next();
 };
 
 export const authMiddleware: RequestHandler = async (req, res, next) => {
-  const authUser = await authorizeSupabase(req.headers.authorization);
+  const { supabaseUser } = await authorizeSupabase(req.headers.authorization);
 
-  const user = await litellm.getUser({
-    userId: authUser.id,
+  const user = await adminLitellmApiClient.getUser({
+    userId: supabaseUser.id,
   });
 
   if (!user) {
-    throwHttpError({
+    throw createOpenAiHttpError({
       status: STATUS_CODES.FORBIDDEN,
       message: 'Incomplete user registration',
     });
   }
 
   const auth: Auth = {
-    supabaseUser: authUser,
+    supabaseUser,
     user,
   };
 
@@ -60,70 +63,33 @@ export const authMiddleware: RequestHandler = async (req, res, next) => {
   next();
 };
 
-export const litellmServiceAccountMiddleware: RequestHandler = async (
+export const keyAuthMiddleware: RequestHandler = async (req, res, next) => {
+  const keyAuth = await authorizeKey(req.headers.authorization);
+  ctx.set(CTX_GLOBAL_KEYS.KEY_AUTH, keyAuth);
+  next();
+};
+
+export const litellmServiceAccountAuthMiddleware: RequestHandler = async (
   req,
   res,
   next,
 ) => {
-  const authorization = req.headers.authorization;
-
-  if (!authorization) {
-    throwHttpError({
-      status: STATUS_CODES.UNAUTHORIZED,
-      message: 'Missing authorization token',
-    });
-  }
-
-  if (!authorization.startsWith(BEARER_TOKEN_PREFIX)) {
-    throwHttpError({
-      status: STATUS_CODES.UNAUTHORIZED,
-      message: `Authorization token must start with '${BEARER_TOKEN_PREFIX}'`,
-    });
-  }
-
-  const key = await litellm.getKey(
-    {},
-    {
-      Authorization: authorization,
-    },
-  );
-
-  if (!key) {
-    throwHttpError({
-      status: STATUS_CODES.UNAUTHORIZED,
-      message: 'Invalid authorization token',
-    });
-  }
-
-  if (!key.metadata.service_account_id) {
-    throwHttpError({
-      status: STATUS_CODES.UNAUTHORIZED,
-      message: 'Only service account can access this endpoint',
-    });
-  }
-
-  if (key.blocked) {
-    throwHttpError({
-      status: STATUS_CODES.UNAUTHORIZED,
-      message: 'Service account is blocked',
-    });
-  }
-
+  await authorizeLitellmServiceAccount(req.headers.authorization);
   next();
 };
 
 async function authorizeSupabase(
   authorization?: string,
-): Promise<SupabaseUser> {
+): Promise<SupabaseAuth> {
   if (!authorization) {
-    throw throwHttpError({
+    throw createOpenAiHttpError({
       status: STATUS_CODES.UNAUTHORIZED,
       message: 'Missing authorization token',
     });
   }
 
   if (!authorization.startsWith(BEARER_TOKEN_PREFIX)) {
-    throwHttpError({
+    throw createOpenAiHttpError({
       status: STATUS_CODES.UNAUTHORIZED,
       message: `Authorization token must start with '${BEARER_TOKEN_PREFIX}'`,
     });
@@ -134,23 +100,115 @@ async function authorizeSupabase(
   const client = createSupabaseClient();
 
   const {
-    data: { user },
+    data: { user: supabaseUser },
     error,
   } = await client.auth.getUser(token);
 
   if (error) {
-    throwHttpError({
+    throw createOpenAiHttpError({
       status: STATUS_CODES.UNAUTHORIZED,
+      message: 'Failed to authorize', // Override with simple error message
       cause: error,
     });
   }
 
-  if (!user) {
-    throwHttpError({
+  if (!supabaseUser) {
+    throw createOpenAiHttpError({
       status: STATUS_CODES.UNAUTHORIZED,
       message: 'Invalid authorization token',
     });
   }
 
-  return user;
+  return {
+    supabaseUser,
+  };
+}
+
+async function authorizeKey(authorization?: string): Promise<KeyAuth> {
+  if (!authorization) {
+    throw createOpenAiHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: 'Missing authorization token',
+    });
+  }
+
+  if (!authorization.startsWith(BEARER_TOKEN_PREFIX)) {
+    throw createOpenAiHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: `Authorization token must start with '${BEARER_TOKEN_PREFIX}'`,
+    });
+  }
+
+  const token = authorization.slice(BEARER_TOKEN_PREFIX.length);
+
+  const litellmApiClient = createLitellmApiClient(token);
+
+  let key: Key | null;
+
+  try {
+    key = await litellmApiClient.getKey({ keyOrKeyHash: token });
+  } catch (e: unknown) {
+    throw createOpenAiHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: 'Failed to authorize', // Override with simple error message
+      cause: e,
+    });
+  }
+
+  if (!key) {
+    throw createOpenAiHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: 'Invalid authorization token',
+    });
+  }
+
+  return {
+    key,
+    litellmApiClient,
+  };
+}
+
+export async function authorizeLitellmServiceAccount(authorization?: string) {
+  if (!authorization) {
+    throw createOpenAiHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: 'Missing authorization token',
+    });
+  }
+
+  if (!authorization.startsWith(BEARER_TOKEN_PREFIX)) {
+    throw createOpenAiHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: `Authorization token must start with '${BEARER_TOKEN_PREFIX}'`,
+    });
+  }
+
+  const token = authorization.slice(BEARER_TOKEN_PREFIX.length);
+
+  const client = createLitellmApiClient(token);
+
+  const key = await client.getKey({
+    keyOrKeyHash: token,
+  });
+
+  if (!key) {
+    throw createOpenAiHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: 'Invalid authorization token',
+    });
+  }
+
+  if (!key.metadata.service_account_id || key.userId !== null) {
+    throw createOpenAiHttpError({
+      status: STATUS_CODES.FORBIDDEN,
+      message: 'Only service account can access this endpoint',
+    });
+  }
+
+  if (key.blocked) {
+    throw createOpenAiHttpError({
+      status: STATUS_CODES.FORBIDDEN,
+      message: 'Service account is blocked',
+    });
+  }
 }

@@ -1,0 +1,523 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "" // Configure the datasource url at runtime
+  directUrl = env("LITELLM_DB_DIRECT_URL") // Only use in migration with Prisma client
+}
+
+model LiteLLM_AuditLog {
+  id                 String   @id
+  updated_at         DateTime @default(now())
+  changed_by         String   @default("")
+  changed_by_api_key String   @default("")
+  action             String
+  table_name         String
+  object_id          String
+  before_value       Json?
+  updated_values     Json?
+}
+
+model LiteLLM_BudgetTable {
+  budget_id                      String                           @id
+  max_budget                     Float?
+  soft_budget                    Float?
+  max_parallel_requests          Int?
+  tpm_limit                      BigInt?
+  rpm_limit                      BigInt?
+  model_max_budget               Json?
+  budget_duration                String?
+  budget_reset_at                DateTime?
+  created_at                     DateTime                         @default(now())
+  created_by                     String
+  updated_at                     DateTime                         @default(now())
+  updated_by                     String
+  LiteLLM_EndUserTable           LiteLLM_EndUserTable[]
+  LiteLLM_OrganizationMembership LiteLLM_OrganizationMembership[]
+  LiteLLM_OrganizationTable      LiteLLM_OrganizationTable[]
+  LiteLLM_TeamMembership         LiteLLM_TeamMembership[]
+  LiteLLM_VerificationToken      LiteLLM_VerificationToken[]
+}
+
+model LiteLLM_Config {
+  param_name  String @id
+  param_value Json?
+}
+
+model LiteLLM_CredentialsTable {
+  credential_id     String   @id
+  credential_name   String   @unique
+  credential_values Json
+  credential_info   Json?
+  created_at        DateTime @default(now())
+  created_by        String
+  updated_at        DateTime @default(now())
+  updated_by        String
+}
+
+model LiteLLM_CronJob {
+  cronjob_id   String    @id
+  pod_id       String
+  status       JobStatus @default(INACTIVE)
+  last_updated DateTime  @default(now())
+  ttl          DateTime
+}
+
+model LiteLLM_DailyTagSpend {
+  id                          String   @id
+  tag                         String?
+  date                        String
+  api_key                     String
+  model                       String?
+  model_group                 String?
+  custom_llm_provider         String?
+  mcp_namespaced_tool_name    String?
+  prompt_tokens               BigInt   @default(0)
+  completion_tokens           BigInt   @default(0)
+  cache_read_input_tokens     BigInt   @default(0)
+  cache_creation_input_tokens BigInt   @default(0)
+  spend                       Float    @default(0.0)
+  api_requests                BigInt   @default(0)
+  successful_requests         BigInt   @default(0)
+  failed_requests             BigInt   @default(0)
+  created_at                  DateTime @default(now())
+  updated_at                  DateTime
+
+  @@unique([tag, date, api_key, model, custom_llm_provider, mcp_namespaced_tool_name])
+  @@index([api_key])
+  @@index([date])
+  @@index([mcp_namespaced_tool_name])
+  @@index([model])
+  @@index([tag])
+}
+
+model LiteLLM_DailyTeamSpend {
+  id                          String   @id
+  team_id                     String?
+  date                        String
+  api_key                     String
+  model                       String?
+  model_group                 String?
+  custom_llm_provider         String?
+  mcp_namespaced_tool_name    String?
+  prompt_tokens               BigInt   @default(0)
+  completion_tokens           BigInt   @default(0)
+  cache_read_input_tokens     BigInt   @default(0)
+  cache_creation_input_tokens BigInt   @default(0)
+  spend                       Float    @default(0.0)
+  api_requests                BigInt   @default(0)
+  successful_requests         BigInt   @default(0)
+  failed_requests             BigInt   @default(0)
+  created_at                  DateTime @default(now())
+  updated_at                  DateTime
+
+  @@unique([team_id, date, api_key, model, custom_llm_provider, mcp_namespaced_tool_name])
+  @@index([api_key])
+  @@index([date])
+  @@index([mcp_namespaced_tool_name])
+  @@index([model])
+  @@index([team_id])
+}
+
+model LiteLLM_DailyUserSpend {
+  id                          String   @id
+  user_id                     String?
+  date                        String
+  api_key                     String
+  model                       String?
+  model_group                 String?
+  custom_llm_provider         String?
+  mcp_namespaced_tool_name    String?
+  prompt_tokens               BigInt   @default(0)
+  completion_tokens           BigInt   @default(0)
+  cache_read_input_tokens     BigInt   @default(0)
+  cache_creation_input_tokens BigInt   @default(0)
+  spend                       Float    @default(0.0)
+  api_requests                BigInt   @default(0)
+  successful_requests         BigInt   @default(0)
+  failed_requests             BigInt   @default(0)
+  created_at                  DateTime @default(now())
+  updated_at                  DateTime
+
+  @@unique([user_id, date, api_key, model, custom_llm_provider, mcp_namespaced_tool_name])
+  @@index([api_key])
+  @@index([date])
+  @@index([mcp_namespaced_tool_name])
+  @@index([model])
+  @@index([user_id])
+}
+
+model LiteLLM_EndUserTable {
+  user_id              String               @id
+  alias                String?
+  spend                Float                @default(0.0)
+  allowed_model_region String?
+  default_model        String?
+  budget_id            String?
+  blocked              Boolean              @default(false)
+  LiteLLM_BudgetTable  LiteLLM_BudgetTable? @relation(fields: [budget_id], references: [budget_id])
+}
+
+model LiteLLM_ErrorLogs {
+  request_id         String   @id
+  startTime          DateTime
+  endTime            DateTime
+  api_base           String   @default("")
+  model_group        String   @default("")
+  litellm_model_name String   @default("")
+  model_id           String   @default("")
+  request_kwargs     Json     @default("{}")
+  exception_type     String   @default("")
+  exception_string   String   @default("")
+  status_code        String   @default("")
+}
+
+model LiteLLM_GuardrailsTable {
+  guardrail_id   String   @id
+  guardrail_name String   @unique
+  litellm_params Json
+  guardrail_info Json?
+  created_at     DateTime @default(now())
+  updated_at     DateTime
+}
+
+model LiteLLM_HealthCheckTable {
+  health_check_id  String   @id
+  model_name       String
+  model_id         String?
+  status           String
+  healthy_count    Int      @default(0)
+  unhealthy_count  Int      @default(0)
+  error_message    String?
+  response_time_ms Float?
+  details          Json?
+  checked_by       String?
+  checked_at       DateTime @default(now())
+  created_at       DateTime @default(now())
+  updated_at       DateTime
+
+  @@index([checked_at])
+  @@index([model_name])
+  @@index([status])
+}
+
+model LiteLLM_InvitationLink {
+  id                                                                     String            @id
+  user_id                                                                String
+  is_accepted                                                            Boolean           @default(false)
+  accepted_at                                                            DateTime?
+  expires_at                                                             DateTime
+  created_at                                                             DateTime
+  created_by                                                             String
+  updated_at                                                             DateTime
+  updated_by                                                             String
+  LiteLLM_UserTable_LiteLLM_InvitationLink_created_byToLiteLLM_UserTable LiteLLM_UserTable @relation("LiteLLM_InvitationLink_created_byToLiteLLM_UserTable", fields: [created_by], references: [user_id])
+  LiteLLM_UserTable_LiteLLM_InvitationLink_updated_byToLiteLLM_UserTable LiteLLM_UserTable @relation("LiteLLM_InvitationLink_updated_byToLiteLLM_UserTable", fields: [updated_by], references: [user_id])
+  LiteLLM_UserTable_LiteLLM_InvitationLink_user_idToLiteLLM_UserTable    LiteLLM_UserTable @relation("LiteLLM_InvitationLink_user_idToLiteLLM_UserTable", fields: [user_id], references: [user_id])
+}
+
+model LiteLLM_MCPServerTable {
+  server_id         String    @id
+  alias             String?
+  description       String?
+  url               String?
+  transport         String    @default("sse")
+  spec_version      String    @default("2025-03-26")
+  auth_type         String?
+  created_at        DateTime? @default(now())
+  created_by        String?
+  updated_at        DateTime? @default(now())
+  updated_by        String?
+  mcp_info          Json?     @default("{}")
+  mcp_access_groups String[]
+  command           String?
+  args              String[]  @default([])
+  env               Json?     @default("{}")
+}
+
+model LiteLLM_ManagedFileTable {
+  id                  String   @id
+  unified_file_id     String   @unique
+  file_object         Json?
+  model_mappings      Json
+  flat_model_file_ids String[] @default([])
+  created_at          DateTime @default(now())
+  created_by          String?
+  updated_at          DateTime
+  updated_by          String?
+
+  @@index([unified_file_id])
+}
+
+model LiteLLM_ManagedObjectTable {
+  id                String   @id
+  unified_object_id String   @unique
+  model_object_id   String   @unique
+  file_object       Json
+  file_purpose      String
+  status            String?
+  created_at        DateTime @default(now())
+  created_by        String?
+  updated_at        DateTime
+  updated_by        String?
+
+  @@index([model_object_id])
+  @@index([unified_object_id])
+}
+
+model LiteLLM_ManagedVectorStoresTable {
+  vector_store_id          String   @id
+  custom_llm_provider      String
+  vector_store_name        String?
+  vector_store_description String?
+  vector_store_metadata    Json?
+  created_at               DateTime @default(now())
+  updated_at               DateTime
+  litellm_credential_name  String?
+  litellm_params           Json?
+}
+
+model LiteLLM_ModelTable {
+  id                Int                @id @default(autoincrement())
+  aliases           Json?
+  created_at        DateTime           @default(now())
+  created_by        String
+  updated_at        DateTime           @default(now())
+  updated_by        String
+  LiteLLM_TeamTable LiteLLM_TeamTable?
+}
+
+model LiteLLM_ObjectPermissionTable {
+  object_permission_id      String                      @id
+  mcp_servers               String[]                    @default([])
+  mcp_access_groups         String[]                    @default([])
+  vector_stores             String[]                    @default([])
+  LiteLLM_OrganizationTable LiteLLM_OrganizationTable[]
+  LiteLLM_TeamTable         LiteLLM_TeamTable[]
+  LiteLLM_UserTable         LiteLLM_UserTable[]
+  LiteLLM_VerificationToken LiteLLM_VerificationToken[]
+}
+
+model LiteLLM_OrganizationMembership {
+  user_id                   String
+  organization_id           String
+  user_role                 String?
+  spend                     Float?                    @default(0.0)
+  budget_id                 String?
+  created_at                DateTime?                 @default(now())
+  updated_at                DateTime?                 @default(now())
+  LiteLLM_BudgetTable       LiteLLM_BudgetTable?      @relation(fields: [budget_id], references: [budget_id])
+  LiteLLM_OrganizationTable LiteLLM_OrganizationTable @relation(fields: [organization_id], references: [organization_id])
+  LiteLLM_UserTable         LiteLLM_UserTable         @relation(fields: [user_id], references: [user_id])
+
+  @@id([user_id, organization_id])
+  @@unique([user_id, organization_id])
+}
+
+model LiteLLM_OrganizationTable {
+  organization_id                String                           @id
+  organization_alias             String
+  budget_id                      String
+  metadata                       Json                             @default("{}")
+  models                         String[]
+  spend                          Float                            @default(0.0)
+  model_spend                    Json                             @default("{}")
+  object_permission_id           String?
+  created_at                     DateTime                         @default(now())
+  created_by                     String
+  updated_at                     DateTime                         @default(now())
+  updated_by                     String
+  LiteLLM_OrganizationMembership LiteLLM_OrganizationMembership[]
+  LiteLLM_BudgetTable            LiteLLM_BudgetTable              @relation(fields: [budget_id], references: [budget_id])
+  LiteLLM_ObjectPermissionTable  LiteLLM_ObjectPermissionTable?   @relation(fields: [object_permission_id], references: [object_permission_id])
+  LiteLLM_TeamTable              LiteLLM_TeamTable[]
+  LiteLLM_UserTable              LiteLLM_UserTable[]
+  LiteLLM_VerificationToken      LiteLLM_VerificationToken[]
+}
+
+model LiteLLM_ProxyModelTable {
+  model_id       String   @id
+  model_name     String
+  litellm_params Json
+  model_info     Json?
+  created_at     DateTime @default(now())
+  created_by     String
+  updated_at     DateTime @default(now())
+  updated_by     String
+}
+
+model LiteLLM_SpendLogs {
+  request_id               String    @id
+  call_type                String
+  api_key                  String    @default("")
+  spend                    Float     @default(0.0)
+  total_tokens             Int       @default(0)
+  prompt_tokens            Int       @default(0)
+  completion_tokens        Int       @default(0)
+  startTime                DateTime
+  endTime                  DateTime
+  completionStartTime      DateTime?
+  model                    String    @default("")
+  model_id                 String?   @default("")
+  model_group              String?   @default("")
+  custom_llm_provider      String?   @default("")
+  api_base                 String?   @default("")
+  user                     String?   @default("")
+  metadata                 Json?     @default("{}")
+  cache_hit                String?   @default("")
+  cache_key                String?   @default("")
+  request_tags             Json?     @default("[]")
+  team_id                  String?
+  end_user                 String?
+  requester_ip_address     String?
+  messages                 Json?     @default("{}")
+  response                 Json?     @default("{}")
+  session_id               String?
+  status                   String?
+  mcp_namespaced_tool_name String?
+  proxy_server_request     Json?     @default("{}")
+
+  @@index([end_user])
+  @@index([session_id])
+  @@index([startTime])
+}
+
+model LiteLLM_TeamMembership {
+  user_id             String
+  team_id             String
+  spend               Float                @default(0.0)
+  budget_id           String?
+  LiteLLM_BudgetTable LiteLLM_BudgetTable? @relation(fields: [budget_id], references: [budget_id])
+
+  @@id([user_id, team_id])
+}
+
+model LiteLLM_TeamTable {
+  team_id                       String                         @id
+  team_alias                    String?
+  organization_id               String?
+  object_permission_id          String?
+  admins                        String[]
+  members                       String[]
+  members_with_roles            Json                           @default("{}")
+  metadata                      Json                           @default("{}")
+  max_budget                    Float?
+  spend                         Float                          @default(0.0)
+  models                        String[]
+  max_parallel_requests         Int?
+  tpm_limit                     BigInt?
+  rpm_limit                     BigInt?
+  budget_duration               String?
+  budget_reset_at               DateTime?
+  blocked                       Boolean                        @default(false)
+  created_at                    DateTime                       @default(now())
+  updated_at                    DateTime                       @default(now())
+  model_spend                   Json                           @default("{}")
+  model_max_budget              Json                           @default("{}")
+  team_member_permissions       String[]                       @default([])
+  model_id                      Int?                           @unique
+  LiteLLM_ModelTable            LiteLLM_ModelTable?            @relation(fields: [model_id], references: [id])
+  LiteLLM_ObjectPermissionTable LiteLLM_ObjectPermissionTable? @relation(fields: [object_permission_id], references: [object_permission_id])
+  LiteLLM_OrganizationTable     LiteLLM_OrganizationTable?     @relation(fields: [organization_id], references: [organization_id])
+}
+
+model LiteLLM_UserNotifications {
+  request_id    String   @id
+  user_id       String
+  models        String[]
+  justification String
+  status        String
+}
+
+model LiteLLM_UserTable {
+  user_id                                                                     String                           @id
+  user_alias                                                                  String?
+  team_id                                                                     String?
+  sso_user_id                                                                 String?                          @unique
+  organization_id                                                             String?
+  object_permission_id                                                        String?
+  password                                                                    String?
+  teams                                                                       String[]                         @default([])
+  user_role                                                                   String?
+  max_budget                                                                  Float?
+  spend                                                                       Float                            @default(0.0)
+  user_email                                                                  String?
+  models                                                                      String[]
+  metadata                                                                    Json                             @default("{}")
+  max_parallel_requests                                                       Int?
+  tpm_limit                                                                   BigInt?
+  rpm_limit                                                                   BigInt?
+  budget_duration                                                             String?
+  budget_reset_at                                                             DateTime?
+  allowed_cache_controls                                                      String[]                         @default([])
+  model_spend                                                                 Json                             @default("{}")
+  model_max_budget                                                            Json                             @default("{}")
+  created_at                                                                  DateTime?                        @default(now())
+  updated_at                                                                  DateTime?                        @default(now())
+  LiteLLM_InvitationLink_LiteLLM_InvitationLink_created_byToLiteLLM_UserTable LiteLLM_InvitationLink[]         @relation("LiteLLM_InvitationLink_created_byToLiteLLM_UserTable")
+  LiteLLM_InvitationLink_LiteLLM_InvitationLink_updated_byToLiteLLM_UserTable LiteLLM_InvitationLink[]         @relation("LiteLLM_InvitationLink_updated_byToLiteLLM_UserTable")
+  LiteLLM_InvitationLink_LiteLLM_InvitationLink_user_idToLiteLLM_UserTable    LiteLLM_InvitationLink[]         @relation("LiteLLM_InvitationLink_user_idToLiteLLM_UserTable")
+  LiteLLM_OrganizationMembership                                              LiteLLM_OrganizationMembership[]
+  LiteLLM_ObjectPermissionTable                                               LiteLLM_ObjectPermissionTable?   @relation(fields: [object_permission_id], references: [object_permission_id])
+  LiteLLM_OrganizationTable                                                   LiteLLM_OrganizationTable?       @relation(fields: [organization_id], references: [organization_id])
+}
+
+model LiteLLM_VerificationToken {
+  token                         String                         @id
+  key_name                      String?
+  key_alias                     String?
+  soft_budget_cooldown          Boolean                        @default(false)
+  spend                         Float                          @default(0.0)
+  expires                       DateTime?
+  models                        String[]
+  aliases                       Json                           @default("{}")
+  config                        Json                           @default("{}")
+  user_id                       String?
+  team_id                       String?
+  permissions                   Json                           @default("{}")
+  max_parallel_requests         Int?
+  metadata                      Json                           @default("{}")
+  blocked                       Boolean?
+  tpm_limit                     BigInt?
+  rpm_limit                     BigInt?
+  max_budget                    Float?
+  budget_duration               String?
+  budget_reset_at               DateTime?
+  allowed_cache_controls        String[]                       @default([])
+  allowed_routes                String[]                       @default([])
+  model_spend                   Json                           @default("{}")
+  model_max_budget              Json                           @default("{}")
+  budget_id                     String?
+  organization_id               String?
+  object_permission_id          String?
+  created_at                    DateTime?                      @default(now())
+  created_by                    String?
+  updated_at                    DateTime?                      @default(now())
+  updated_by                    String?
+  LiteLLM_BudgetTable           LiteLLM_BudgetTable?           @relation(fields: [budget_id], references: [budget_id])
+  LiteLLM_ObjectPermissionTable LiteLLM_ObjectPermissionTable? @relation(fields: [object_permission_id], references: [object_permission_id])
+  LiteLLM_OrganizationTable     LiteLLM_OrganizationTable?     @relation(fields: [organization_id], references: [organization_id])
+}
+
+enum JobStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// ========================= Custom models ===============================
+
+model NearAI_MessageSignatures {
+  model_id          String      @db.Text
+  model             String      @db.Text
+  chat_id           String      @db.Text
+  text              String      @db.Text
+  signature         String      @db.Text
+  signing_address   String      @db.Text
+  signing_algo      String      @db.Text
+  created_at        DateTime    @db.Timestamptz @default(now())
+  updated_at        DateTime    @db.Timestamptz @default(now()) @updatedAt
+
+  @@id([model_id, chat_id, signing_algo])
+}

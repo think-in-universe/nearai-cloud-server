@@ -5,8 +5,9 @@
   "main": "dist/main.js",
   "type": "module",
   "scripts": {
-    "dev": "ENV=dev tsx src/main.ts",
-    "build": "rm -rf dist && tsup",
+    "generate": "find node_modules/.pnpm -name \".prisma\" -type d -exec rm -rf {} + && prisma generate",
+    "build": "pnpm generate && rm -rf dist && tsup",
+    "preview": "tsx src/main.ts",
     "start": "node dist/main.js",
     "lint": "eslint 'src/**/*.ts' '*.mjs' --fix",
     "prettier": "prettier 'src/**/*.ts' '*.mjs' --write --list-different",
@@ -14,6 +15,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@prisma/client": "^6.13.0",
     "@supabase/supabase-js": "^2.50.3",
     "axios": "^1.11.0",
     "chalk": "^5.4.1",
@@ -24,6 +26,9 @@
     "express-http-context": "^2.0.1",
     "http-errors": "^2.0.0",
     "morgan": "^1.10.1",
+    "openai": "^5.11.0",
+    "prisma": "^6.13.0",
+    "tweetnacl": "^1.0.3",
     "valibot": "^1.1.0",
     "winston": "^3.17.0"
   },

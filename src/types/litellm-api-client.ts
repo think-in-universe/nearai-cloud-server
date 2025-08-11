@@ -1,39 +1,3 @@
-export type LitellmErrorOptions = {
-  error: {
-    message: string;
-    type: string;
-    param: string;
-    code: string;
-  };
-};
-
-export type LitellmOptions = {
-  apiUrl: string;
-  adminKey: string;
-};
-
-export type LitellmRequestOptions<P, B> = {
-  path: Path;
-  method: 'GET' | 'POST';
-  params?: P;
-  body?: B;
-  headers?: Record<string, string | undefined>;
-};
-
-export type LitellmGetOptions<P> = {
-  path: Path;
-  params?: P;
-  headers?: Record<string, string | undefined>;
-};
-
-export type LitellmPostOptions<B> = {
-  path: Path;
-  body?: B;
-  headers?: Record<string, string | undefined>;
-};
-
-export type Path = `/${string}`;
-
 export type RegisterUserParams = {
   userId: string;
   userEmail?: string;
@@ -85,7 +49,7 @@ export type DeleteKeyParams = {
 };
 
 export type GetKeyParams = {
-  keyOrKeyHash?: string;
+  keyOrKeyHash: string;
 };
 
 export type Key = {
@@ -108,7 +72,7 @@ export type Key = {
   metadata: KeyMetadata;
 };
 
-export type KeyMetadata = Record<string, string>;
+export type KeyMetadata = Record<string, string>; // TODO: Maybe `Record<string, unknown>` or a more specific type
 
 export type ListKeysParams = {
   userId: string;
@@ -119,7 +83,7 @@ export type ListKeysParams = {
 };
 
 export type ListKeysResponse = {
-  keyHashes: string[];
+  keys: Key[];
   totalKeys: number;
   page: number;
   pageSize: number;

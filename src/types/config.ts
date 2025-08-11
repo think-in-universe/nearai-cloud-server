@@ -7,6 +7,8 @@ export type Config = {
   litellm: {
     apiUrl: string;
     adminKey: string;
+    dbUrl: string;
+    signingKey: string;
   };
   log: {
     level: 'debug' | 'info';

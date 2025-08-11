@@ -2,7 +2,7 @@ import { RequestHandler } from 'express';
 import morgan from 'morgan';
 import dayjs from 'dayjs';
 import { addColor, getHttpStatusColor } from '../../utils/color';
-import { throwHttpError } from '../../utils/error';
+import { createOpenAiHttpError } from '../../utils/error';
 import { STATUS_CODES } from '../../utils/consts';
 
 export function createIncomingLogMiddleware({
@@ -15,18 +15,18 @@ export function createIncomingLogMiddleware({
       const method = tokens['method']?.(req, res);
 
       if (!method) {
-        throwHttpError({
+        throw createOpenAiHttpError({
           status: STATUS_CODES.INTERNAL_SERVER_ERROR,
-          message: `Pre log token 'method' not found`,
+          message: `Incoming log token 'method' not found`,
         });
       }
 
       const url = tokens['url']?.(req, res);
 
       if (!url) {
-        throwHttpError({
+        throw createOpenAiHttpError({
           status: STATUS_CODES.INTERNAL_SERVER_ERROR,
-          message: `Pre log token 'url' not found`,
+          message: `Incoming log token 'url' not found`,
         });
       }
 
@@ -55,27 +55,27 @@ export function createOutgoingLogMiddleware({
     const method = tokens['method']?.(req, res);
 
     if (!method) {
-      throwHttpError({
+      throw createOpenAiHttpError({
         status: STATUS_CODES.INTERNAL_SERVER_ERROR,
-        message: `Post log token 'method' not found`,
+        message: `Outgoing log token 'method' not found`,
       });
     }
 
     const url = tokens['url']?.(req, res);
 
     if (!url) {
-      throwHttpError({
+      throw createOpenAiHttpError({
         status: STATUS_CODES.INTERNAL_SERVER_ERROR,
-        message: `Post log token 'url' not found`,
+        message: `Outgoing log token 'url' not found`,
       });
     }
 
     const status = tokens['status']?.(req, res);
 
     if (!status) {
-      throwHttpError({
+      throw createOpenAiHttpError({
         status: STATUS_CODES.INTERNAL_SERVER_ERROR,
-        message: `Post log token 'status' not found`,
+        message: `Outgoing log token 'status' not found`,
       });
     }
 
@@ -84,9 +84,9 @@ export function createOutgoingLogMiddleware({
     const responseTime = tokens['response-time']?.(req, res);
 
     if (!responseTime) {
-      throwHttpError({
+      throw createOpenAiHttpError({
         status: STATUS_CODES.INTERNAL_SERVER_ERROR,
-        message: `Post log token 'response-time' not found`,
+        message: `Outgoing log token 'response-time' not found`,
       });
     }
 

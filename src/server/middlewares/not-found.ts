@@ -1,9 +1,9 @@
 import { RequestHandler } from 'express';
-import { throwHttpError } from '../../utils/error';
+import { createOpenAiHttpError } from '../../utils/error';
 import { STATUS_CODES } from '../../utils/consts';
 
 export const notFoundMiddleware: RequestHandler = () => {
-  throwHttpError({
+  throw createOpenAiHttpError({
     status: STATUS_CODES.NOT_FOUND,
   });
 };

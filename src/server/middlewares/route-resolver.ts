@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 import ctx from 'express-http-context';
-import { throwHttpError } from '../../utils/error';
+import { createOpenAiHttpError } from '../../utils/error';
 import { CTX_GLOBAL_KEYS, STATUS_CODES } from '../../utils/consts';
 import { RequestHandler } from 'express';
 import {
@@ -11,6 +11,7 @@ import {
   ToUndefinedSchema,
   toUndefinedSchema,
 } from '../../types/route-resolver';
+import stream from 'node:stream';
 
 export function createRouteResolver<
   TParamsInputSchema extends BaseSchema = ToUndefinedSchema,
@@ -76,8 +77,13 @@ export function createRouteResolver<
 
     if (output === undefined) {
       res.status(STATUS_CODES.NO_CONTENT).send();
+    } else if (output instanceof stream.Readable) {
+      res.setHeader('content-type', 'text/event-stream');
+      res.setHeader('cache-control', 'no-cache');
+      res.setHeader('connection', 'keep-alive');
+      output.pipe(res);
     } else {
-      res.json(output);
+      res.send(output);
     }
   };
 
@@ -89,7 +95,7 @@ function parseInput(schema: BaseSchema, data: unknown): unknown {
     return v.parse(schema, data);
   } catch (e: unknown) {
     if (e instanceof v.ValiError) {
-      throwHttpError({
+      throw createOpenAiHttpError({
         status: STATUS_CODES.BAD_REQUEST,
         cause: e,
       });
@@ -104,7 +110,8 @@ function parseOutput(schema: BaseSchema, data: unknown): unknown {
     return v.parse(schema, data);
   } catch (e: unknown) {
     if (e instanceof v.ValiError) {
-      throwHttpError({
+      throw createOpenAiHttpError({
+        status: STATUS_CODES.INTERNAL_SERVER_ERROR,
         cause: e,
       });
     }

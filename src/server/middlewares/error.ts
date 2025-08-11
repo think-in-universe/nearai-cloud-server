@@ -1,9 +1,8 @@
 import { ErrorRequestHandler } from 'express';
-import { isHttpError } from 'http-errors';
-import { throwHttpError } from '../../utils/error';
+import { isOpenAiHttpError, createOpenAiHttpError } from '../../utils/error';
 import { STATUS_CODES } from '../../utils/consts';
 
-export function createHttpErrorMiddleware({
+export function createOpenAiHttpErrorMiddleware({
   isDev = true,
 }: { isDev?: boolean } = {}): ErrorRequestHandler {
   return (
@@ -19,11 +18,11 @@ export function createHttpErrorMiddleware({
       console.error(e);
     }
 
-    if (isHttpError(e)) {
+    if (isOpenAiHttpError(e)) {
       throw e;
     }
 
-    throwHttpError({
+    throw createOpenAiHttpError({
       status: STATUS_CODES.INTERNAL_SERVER_ERROR,
       cause: e,
     });
@@ -40,29 +39,28 @@ export function createExposeErrorMiddleware({
     /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     next,
   ) => {
-    let status;
-    let message: string;
-    let stack: string | undefined;
-
-    if (isHttpError(e)) {
-      status = e.status;
-      message = isDev || status !== 500 ? e.message : 'Internal Server Error';
-      stack = isDev ? e.stack : undefined;
-    } else if (e instanceof Error) {
-      status = 500;
-      message = isDev ? e.message : 'Internal Server Error';
-      stack = isDev ? e.stack : undefined;
+    if (isOpenAiHttpError(e)) {
+      res.status(e.status).json({
+        error: {
+          message:
+            isDev || e.status !== STATUS_CODES.INTERNAL_SERVER_ERROR
+              ? e.message
+              : 'Internal Server Error',
+          type: e.type,
+          param: e.param,
+          code: e.code,
+          stack: isDev ? e.stack : undefined,
+        },
+      });
     } else {
-      status = 500;
-      message = 'Internal Server Error';
+      res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+        error: {
+          message: 'Internal Server Error',
+          type: 'error',
+          param: null,
+          code: STATUS_CODES.INTERNAL_SERVER_ERROR.toString(),
+        },
+      });
     }
-
-    res.status(status).json({
-      error: {
-        status,
-        message,
-        stack,
-      },
-    });
   };
 }

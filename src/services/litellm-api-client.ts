@@ -1,5 +1,4 @@
 import {
-  LitellmOptions,
   RegisterUserParams,
   GenerateKeyParams,
   DeleteKeyParams,
@@ -8,10 +7,6 @@ import {
   ListKeysResponse,
   User,
   Key,
-  LitellmErrorOptions,
-  LitellmRequestOptions,
-  LitellmGetOptions,
-  LitellmPostOptions,
   UpdateKeyParams,
   GetSpendLogsParams,
   SpendLog,
@@ -19,75 +14,17 @@ import {
   GetKeyParams,
   ManageUserParams,
   KeyMetadata,
-} from '../types/litellm';
+} from '../types/litellm-api-client';
 import { config } from '../config';
-import axios, { Axios, AxiosError } from 'axios';
+import { OpenAI } from 'openai/client';
+import stream from 'node:stream';
+import { ApiClientOptions } from '../types/api-client';
+import { STATUS_CODES } from '../utils/consts';
+import { ApiClient, ApiError } from './api-client';
 
-export class LitellmError extends Error {
-  type: string;
-  param: string;
-  code: string;
-
-  constructor(options: LitellmErrorOptions, cause?: unknown) {
-    super(options.error.message, {
-      cause,
-    });
-
-    this.type = options.error.type;
-    this.param = options.error.param;
-    this.code = options.error.code;
-
-    this.name = LitellmError.name;
-  }
-}
-
-export class Litellm {
-  private api: Axios;
-
-  constructor({ apiUrl, adminKey }: LitellmOptions) {
-    this.api = axios.create({
-      baseURL: apiUrl,
-      headers: {
-        authorization: `Bearer ${adminKey}`,
-      },
-    });
-  }
-
-  private async request<T, P = unknown, B = unknown>(
-    options: LitellmRequestOptions<P, B>,
-  ): Promise<T> {
-    try {
-      const res = await this.api.request<T>({
-        url: options.path,
-        method: options.method,
-        params: options.params,
-        data: options.body,
-        headers: options.headers,
-      });
-      return res.data;
-    } catch (e: unknown) {
-      if (e instanceof AxiosError && e.response?.data) {
-        throw new LitellmError(e.response.data, e);
-      }
-
-      throw e;
-    }
-  }
-
-  private async get<T, P = unknown>(options: LitellmGetOptions<P>): Promise<T> {
-    return this.request({
-      ...options,
-      method: 'GET',
-    });
-  }
-
-  private async post<T, B = unknown>(
-    options: LitellmPostOptions<B>,
-  ): Promise<T> {
-    return this.request({
-      ...options,
-      method: 'POST',
-    });
+export class LitellmApiClient extends ApiClient {
+  constructor(options: ApiClientOptions) {
+    super(options);
   }
 
   async registerUser({ userId, userEmail }: RegisterUserParams) {
@@ -127,7 +64,7 @@ export class Litellm {
       }
     >({
       path: '/user/info',
-      params: {
+      query: {
         user_id: userId,
       },
     });
@@ -249,10 +186,7 @@ export class Litellm {
     });
   }
 
-  async getKey(
-    { keyOrKeyHash }: GetKeyParams,
-    headers?: Record<string, string>,
-  ): Promise<Key | null> {
+  async getKey({ keyOrKeyHash }: GetKeyParams): Promise<Key | null> {
     let keyInfo;
 
     try {
@@ -283,13 +217,15 @@ export class Litellm {
         }
       >({
         path: '/key/info',
-        params: {
+        query: {
           key: keyOrKeyHash,
         },
-        headers,
       });
     } catch (e: unknown) {
-      if (e instanceof AxiosError && e.status === 404) {
+      if (
+        e instanceof ApiError &&
+        e.code === STATUS_CODES.NOT_FOUND.toString()
+      ) {
         return null;
       }
 
@@ -326,7 +262,24 @@ export class Litellm {
   }: ListKeysParams): Promise<ListKeysResponse> {
     const { keys, total_count, current_page, total_pages } = await this.get<
       {
-        keys: string[];
+        keys: {
+          token: string;
+          key_name: string;
+          key_alias: string | null;
+          spend: number;
+          expires: string | null;
+          models: string[];
+          user_id: string;
+          team_id: string | null;
+          rpm_limit: number | null;
+          tpm_limit: number | null;
+          max_budget: number | null;
+          budget_duration: string | null;
+          budget_reset_at: string | null;
+          blocked: boolean | null;
+          created_at: string;
+          metadata: KeyMetadata;
+        }[];
         total_count: number;
         current_page: number;
         total_pages: number;
@@ -335,23 +288,42 @@ export class Litellm {
         user_id?: string;
         page?: number;
         size?: number;
-        team_id?: string;
+        return_full_object?: boolean;
         sort_by?: string;
         sort_order?: 'asc' | 'desc';
       }
     >({
       path: '/key/list',
-      params: {
+      query: {
         user_id: userId,
         page: page,
         size: pageSize,
+        return_full_object: true,
         sort_by: sortBy,
         sort_order: sortOrder,
       },
     });
 
     return {
-      keyHashes: keys,
+      keys: keys.map((key) => ({
+        keyOrKeyHash: key.token, // This is definitely the key hash, but we keep the name `keyOrKeyHash` for type compatibility
+        keyName: key.key_name,
+        keyAlias: key.key_alias,
+        spend: key.spend,
+        expires: key.expires,
+        models: key.models,
+        userId: key.user_id,
+        teamId: key.team_id,
+        rpmLimit: key.rpm_limit,
+        tpmLimit: key.tpm_limit,
+        budgetId: null, // TODO: Doesn't exist in the response. Keeping it `null` will confuse users if the id does exist
+        maxBudget: key.max_budget,
+        budgetDuration: key.budget_duration,
+        budgetResetAt: key.budget_reset_at,
+        blocked: key.blocked,
+        createdAt: key.created_at,
+        metadata: key.metadata,
+      })),
       totalKeys: total_count,
       page: current_page,
       pageSize,
@@ -377,7 +349,7 @@ export class Litellm {
         completion_tokens: number;
         total_tokens: number;
         model_id: string;
-        model: string;
+        model_group: string;
         startTime: string;
         endTime: string;
       }[],
@@ -390,7 +362,7 @@ export class Litellm {
       }
     >({
       path: '/spend/logs',
-      params: {
+      query: {
         user_id: userId,
         api_key: keyOrKeyHash,
         start_date: startDate,
@@ -411,15 +383,40 @@ export class Litellm {
         completionTokens: log.completion_tokens,
         totalTokens: log.total_tokens,
         modelId: log.model_id,
-        model: log.model,
+        model: log.model_group,
         startTime: log.startTime,
         endTime: log.endTime,
       };
     });
   }
+
+  async chatCompletions(
+    params: OpenAI.ChatCompletionCreateParams,
+  ): Promise<OpenAI.ChatCompletion | stream.Readable> {
+    return this.post({
+      path: '/chat/completions',
+      body: params,
+      responseType: params.stream ? 'stream' : undefined,
+    });
+  }
+
+  async models(): Promise<OpenAI.PageResponse<OpenAI.Model>> {
+    return this.get({
+      path: '/models',
+    });
+  }
 }
 
-export const litellm = new Litellm({
-  apiUrl: config.litellm.apiUrl,
-  adminKey: config.litellm.adminKey,
-});
+export function createLitellmApiClient(
+  apiKey: string,
+  apiUrl = config.litellm.apiUrl,
+): LitellmApiClient {
+  return new LitellmApiClient({
+    apiUrl,
+    apiKey,
+  });
+}
+
+export const adminLitellmApiClient = createLitellmApiClient(
+  config.litellm.adminKey,
+);
