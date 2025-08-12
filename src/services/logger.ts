@@ -22,5 +22,4 @@ export function createLogger({ isDev = true }: { isDev?: boolean } = {}) {
   return winston.createLogger(loggerOptions);
 }
 
-// Global logger
 export const logger = createLogger({ isDev: config.isDev });

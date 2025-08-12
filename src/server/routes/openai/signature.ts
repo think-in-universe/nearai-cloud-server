@@ -7,6 +7,8 @@ import { createOpenAiHttpError } from '../../../utils/error';
 import { STATUS_CODES } from '../../../utils/consts';
 import { createPrivateLlmApiClient } from '../../../services/private-llm-api-client';
 import { InternalModelParams } from '../../../types/litellm-database-client';
+import { nearAiCloudDatabaseClient } from '../../../services/nearai-cloud-database-client';
+import { logger } from '../../../services/logger';
 
 const paramsInputSchema = v.object({
   chat_id: v.string(),
@@ -52,7 +54,7 @@ export const signature = createRouteResolver({
   resolve: async ({ inputs: { params, query } }) => {
     const modelParams: InternalModelParams = ctx.get('modelParams');
 
-    const cache = await litellmDatabaseClient.getSignature(
+    const cache = await nearAiCloudDatabaseClient.getSignature(
       modelParams.modelId,
       params.chat_id,
       query.signing_algo,
@@ -73,12 +75,16 @@ export const signature = createRouteResolver({
       signing_algo: query.signing_algo,
     });
 
-    await litellmDatabaseClient.setSignature(
-      modelParams.modelId,
-      params.chat_id,
-      modelParams.model,
-      signature,
-    );
+    nearAiCloudDatabaseClient
+      .setSignature(
+        modelParams.modelId,
+        params.chat_id,
+        modelParams.model,
+        signature,
+      )
+      .catch((reason) => {
+        logger.error(`Failed to set chat message signature: ${reason}`);
+      });
 
     return signature;
   },

@@ -15,9 +15,9 @@ import {
   ManageUserParams,
   KeyMetadata,
 } from '../types/litellm-api-client';
-import { config } from '../config';
 import { OpenAI } from 'openai/client';
 import stream from 'node:stream';
+import { config } from '../config';
 import { ApiClientOptions } from '../types/api-client';
 import { STATUS_CODES } from '../utils/consts';
 import { ApiClient, ApiError } from './api-client';
@@ -409,7 +409,7 @@ export class LitellmApiClient extends ApiClient {
 
 export function createLitellmApiClient(
   apiKey: string,
-  apiUrl = config.litellm.apiUrl,
+  apiUrl: string = config.litellm.apiUrl,
 ): LitellmApiClient {
   return new LitellmApiClient({
     apiUrl,

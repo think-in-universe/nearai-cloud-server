@@ -1,20 +1,16 @@
-import { PrismaClient } from '@prisma/client';
-import { config } from '../config';
+import { PrismaClient } from '../../.prisma/generated/litellm';
 import { litellmDecryptValue } from '../utils/crypto';
 import * as v from 'valibot';
 import {
   InternalModelParams,
   LitellmCredentialValues,
 } from '../types/litellm-database-client';
-import { Signature, SigningAlgo } from '../types/privatellm-api-client';
 
 export class LitellmDatabaseClient {
   private client: PrismaClient;
 
-  constructor(datasourceUrl: string) {
-    this.client = new PrismaClient({
-      datasourceUrl,
-    });
+  constructor() {
+    this.client = new PrismaClient();
   }
 
   async getInternalModelParams(
@@ -99,55 +95,10 @@ export class LitellmDatabaseClient {
       apiKey: litellmDecryptValue(credentialValues.api_key),
     };
   }
-
-  async getSignature(
-    modelId: string,
-    chatId: string,
-    signingAlgo: SigningAlgo,
-  ): Promise<Signature | null> {
-    const signature = await this.client.nearAI_MessageSignatures.findUnique({
-      where: {
-        model_id_chat_id_signing_algo: {
-          model_id: modelId,
-          chat_id: chatId,
-          signing_algo: signingAlgo,
-        },
-      },
-    });
-
-    if (!signature) {
-      return null;
-    }
-
-    return {
-      text: signature.text,
-      signature: signature.signature,
-      signing_address: signature.signing_address,
-      signing_algo: signature.signing_algo as SigningAlgo,
-    };
-  }
-
-  async setSignature(
-    modelId: string,
-    chatId: string,
-    model: string,
-    signature: Signature,
-  ) {
-    await this.client.nearAI_MessageSignatures.create({
-      data: {
-        ...signature,
-        model_id: modelId,
-        chat_id: chatId,
-        model,
-      },
-    });
-  }
 }
 
-export function createLitellmDatabaseClient(
-  datasourceUrl = config.litellm.dbUrl,
-): LitellmDatabaseClient {
-  return new LitellmDatabaseClient(datasourceUrl);
+export function createLitellmDatabaseClient(): LitellmDatabaseClient {
+  return new LitellmDatabaseClient();
 }
 
 export const litellmDatabaseClient = createLitellmDatabaseClient();

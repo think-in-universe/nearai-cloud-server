@@ -33,7 +33,7 @@ export function createIncomingLogMiddleware({
       return [
         addColor(`[${timestamp}]`, 'gray', isDev),
         ' ',
-        addColor('-->', 'gray', isDev),
+        addColor('<--', 'gray', isDev),
         ' ',
         method,
         ' ',

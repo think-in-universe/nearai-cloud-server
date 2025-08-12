@@ -3,10 +3,11 @@
   "private": true,
   "version": "1.0.0",
   "main": "dist/main.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
-    "generate": "find node_modules/.pnpm -name \".prisma\" -type d -exec rm -rf {} + && prisma generate",
-    "build": "pnpm generate && rm -rf dist && tsup",
+    "generate:litellm": "rm -rf .prisma/generated/litellm && prisma generate --schema .prisma/litellm.schema.prisma",
+    "generate:nearai-cloud": "rm -rf .prisma/generated/nearai-cloud && prisma generate --schema .prisma/nearai-cloud.schema.prisma",
+    "build": "rm -rf dist && pnpm generate:litellm && pnpm generate:nearai-cloud && tsup",
     "preview": "tsx src/main.ts",
     "start": "node dist/main.js",
     "lint": "eslint 'src/**/*.ts' '*.mjs' --fix",
@@ -15,10 +16,9 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@prisma/client": "^6.13.0",
     "@supabase/supabase-js": "^2.50.3",
     "axios": "^1.11.0",
-    "chalk": "^5.4.1",
+    "chalk": "^4.1.2",
     "cors": "^2.8.5",
     "dayjs": "^1.11.13",
     "dotenv": "^17.2.1",
@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
+    "@prisma/client": "^6.13.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/http-errors": "^2.0.5",

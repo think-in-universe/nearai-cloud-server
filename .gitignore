@@ -117,4 +117,4 @@ dataset/local
 !.env.example
 
 # Prisma
-.prisma
+.prisma/generated

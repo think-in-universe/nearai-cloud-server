@@ -1,11 +1,12 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "./generated/litellm"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = "" // Configure the datasource url at runtime
-  directUrl = env("LITELLM_DB_DIRECT_URL") // Only use in migration with Prisma client
+  provider  = "postgresql"
+  url       = env("LITELLM_DB_URL")
+  directUrl = env("LITELLM_DB_DIRECT_URL")
 }
 
 model LiteLLM_AuditLog {
@@ -219,22 +220,26 @@ model LiteLLM_InvitationLink {
 }
 
 model LiteLLM_MCPServerTable {
-  server_id         String    @id
-  alias             String?
-  description       String?
-  url               String?
-  transport         String    @default("sse")
-  spec_version      String    @default("2025-03-26")
-  auth_type         String?
-  created_at        DateTime? @default(now())
-  created_by        String?
-  updated_at        DateTime? @default(now())
-  updated_by        String?
-  mcp_info          Json?     @default("{}")
-  mcp_access_groups String[]
-  command           String?
-  args              String[]  @default([])
-  env               Json?     @default("{}")
+  server_id          String    @id
+  alias              String?
+  description        String?
+  url                String?
+  transport          String    @default("sse")
+  spec_version       String    @default("2025-03-26")
+  auth_type          String?
+  created_at         DateTime? @default(now())
+  created_by         String?
+  updated_at         DateTime? @default(now())
+  updated_by         String?
+  mcp_info           Json?     @default("{}")
+  mcp_access_groups  String[]
+  command            String?
+  args               String[]  @default([])
+  env                Json?     @default("{}")
+  health_check_error String?
+  last_health_check  DateTime?
+  server_name        String?
+  status             String?   @default("unknown")
 }
 
 model LiteLLM_ManagedFileTable {
@@ -501,23 +506,16 @@ model LiteLLM_VerificationToken {
   LiteLLM_OrganizationTable     LiteLLM_OrganizationTable?     @relation(fields: [organization_id], references: [organization_id])
 }
 
+model LiteLLM_PromptTable {
+  id             String   @id
+  prompt_id      String   @unique
+  litellm_params Json
+  prompt_info    Json?
+  created_at     DateTime @default(now())
+  updated_at     DateTime
+}
+
 enum JobStatus {
   ACTIVE
   INACTIVE
-}
-
-// ========================= Custom models ===============================
-
-model NearAI_MessageSignatures {
-  model_id          String      @db.Text
-  model             String      @db.Text
-  chat_id           String      @db.Text
-  text              String      @db.Text
-  signature         String      @db.Text
-  signing_address   String      @db.Text
-  signing_algo      String      @db.Text
-  created_at        DateTime    @db.Timestamptz @default(now())
-  updated_at        DateTime    @db.Timestamptz @default(now()) @updatedAt
-
-  @@id([model_id, chat_id, signing_algo])
 }
