@@ -16,11 +16,12 @@ import {
   KeyMetadata,
 } from '../types/litellm-api-client';
 import { OpenAI } from 'openai/client';
-import stream from 'node:stream';
+import stream from 'stream';
 import { config } from '../config';
 import { ApiClientOptions } from '../types/api-client';
 import { STATUS_CODES } from '../utils/consts';
 import { ApiClient, ApiError } from './api-client';
+import { litellmKeyHash } from '../utils/crypto';
 
 export class LitellmApiClient extends ApiClient {
   constructor(options: ApiClientOptions) {
@@ -162,7 +163,7 @@ export class LitellmApiClient extends ApiClient {
     >({
       path: '/key/update',
       body: {
-        key: keyOrKeyHash,
+        key: litellmKeyHash(keyOrKeyHash),
         key_alias: keyAlias,
         max_budget: maxBudget,
         blocked,
@@ -180,7 +181,9 @@ export class LitellmApiClient extends ApiClient {
     >({
       path: '/key/delete',
       body: {
-        keys: keyOrKeyHashes,
+        keys: keyOrKeyHashes?.map((keyOrKeyHash) =>
+          litellmKeyHash(keyOrKeyHash),
+        ),
         key_aliases: keyAliases,
       },
     });
@@ -218,7 +221,7 @@ export class LitellmApiClient extends ApiClient {
       >({
         path: '/key/info',
         query: {
-          key: keyOrKeyHash,
+          key: litellmKeyHash(keyOrKeyHash),
         },
       });
     } catch (e: unknown) {
@@ -233,7 +236,7 @@ export class LitellmApiClient extends ApiClient {
     }
 
     return {
-      keyOrKeyHash: keyInfo.key,
+      keyHash: keyInfo.key,
       keyName: keyInfo.info.key_name,
       keyAlias: keyInfo.info.key_alias,
       spend: keyInfo.info.spend,
@@ -306,7 +309,7 @@ export class LitellmApiClient extends ApiClient {
 
     return {
       keys: keys.map((key) => ({
-        keyOrKeyHash: key.token, // This is definitely the key hash, but we keep the name `keyOrKeyHash` for type compatibility
+        keyHash: key.token,
         keyName: key.key_name,
         keyAlias: key.key_alias,
         spend: key.spend,
@@ -364,7 +367,7 @@ export class LitellmApiClient extends ApiClient {
       path: '/spend/logs',
       query: {
         user_id: userId,
-        api_key: keyOrKeyHash,
+        api_key: keyOrKeyHash ? litellmKeyHash(keyOrKeyHash) : undefined,
         start_date: startDate,
         end_date: endDate,
         summarize: false,

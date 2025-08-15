@@ -1,12 +1,12 @@
-import ctx from 'express-http-context';
-import { KeyAuth, keyAuthMiddleware } from '../../middlewares/auth';
-import { CTX_GLOBAL_KEYS } from '../../../utils/consts';
+import { BEARER_TOKEN_PREFIX } from '../../../utils/consts';
 import { createRouteResolver } from '../../middlewares/route-resolver';
+import { createLitellmApiClient } from '../../../services/litellm-api-client';
 
 export const chatCompletions = createRouteResolver({
-  middlewares: [keyAuthMiddleware],
   resolve: async ({ req }) => {
-    const { litellmApiClient }: KeyAuth = ctx.get(CTX_GLOBAL_KEYS.KEY_AUTH);
+    const litellmApiClient = createLitellmApiClient(
+      req.headers.authorization?.slice(BEARER_TOKEN_PREFIX.length) ?? '',
+    );
     return litellmApiClient.chatCompletions(req.body);
   },
 });

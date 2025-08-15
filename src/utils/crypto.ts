@@ -1,6 +1,15 @@
 import { createHash } from 'crypto';
 import nacl from 'tweetnacl';
 import { config } from '../config';
+import { LITELLM_KEY_PREFIX } from './consts';
+
+export function litellmKeyHash(keyOrKeyHash: string): string {
+  if (keyOrKeyHash.startsWith(LITELLM_KEY_PREFIX)) {
+    return createHash('sha256').update(keyOrKeyHash).digest().toString('hex');
+  } else {
+    return keyOrKeyHash;
+  }
+}
 
 export function litellmDecryptValue(
   valueBase64: string,

@@ -11,7 +11,7 @@ import {
   ToUndefinedSchema,
   toUndefinedSchema,
 } from '../../types/route-resolver';
-import stream from 'node:stream';
+import stream from 'stream';
 
 export function createRouteResolver<
   TParamsInputSchema extends BaseSchema = ToUndefinedSchema,

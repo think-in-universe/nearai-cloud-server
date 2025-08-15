@@ -53,7 +53,7 @@ export type GetKeyParams = {
 };
 
 export type Key = {
-  keyOrKeyHash: string;
+  keyHash: string;
   keyName: string; // Simplified key string. e.g. sk-...ABcd
   keyAlias: string | null;
   spend: number;

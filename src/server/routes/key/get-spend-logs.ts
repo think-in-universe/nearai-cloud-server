@@ -1,12 +1,28 @@
 import ctx from 'express-http-context';
 import * as v from 'valibot';
 import { adminLitellmApiClient } from '../../../services/litellm-api-client';
-import { CTX_GLOBAL_KEYS } from '../../../utils/consts';
+import {
+  CTX_GLOBAL_KEYS,
+  INPUT_LIMITS,
+  STATUS_CODES,
+} from '../../../utils/consts';
 import { Auth, authMiddleware } from '../../middlewares/auth';
 import { createRouteResolver } from '../../middlewares/route-resolver';
+import { createOpenAiHttpError } from '../../../utils/error';
 
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 const inputSchema = v.object({
-  keyOrKeyHash: v.string(),
+  keyHash: v.pipe(v.string(), v.hash([INPUT_LIMITS.KEY_HASH_TYPE])),
+  startDate: v.optional(v.pipe(v.string(), v.isoDate())),
+  endDate: v.optional(v.pipe(v.string(), v.isoDate())),
+});
+
+/**
+ * @deprecated
+ */
+const inputSchemaLegacy = v.object({
+  keyOrKeyHash: v.optional(v.string()),
+  keyHash: v.optional(v.pipe(v.string(), v.hash([INPUT_LIMITS.KEY_HASH_TYPE]))),
   startDate: v.optional(v.pipe(v.string(), v.isoDate())),
   endDate: v.optional(v.pipe(v.string(), v.isoDate())),
 });
@@ -30,16 +46,23 @@ const outputSchema = v.array(
 
 export const getSpendLogs = createRouteResolver({
   inputs: {
-    query: inputSchema,
+    query: inputSchemaLegacy,
   },
   output: outputSchema,
   middlewares: [authMiddleware],
   resolve: async ({ inputs: { query } }) => {
     const { user }: Auth = ctx.get(CTX_GLOBAL_KEYS.AUTH);
 
+    if (!query.keyHash && !query.keyOrKeyHash) {
+      throw createOpenAiHttpError({
+        status: STATUS_CODES.BAD_REQUEST,
+        message: 'Missing keyHash',
+      });
+    }
+
     const logs = await adminLitellmApiClient.getSpendLogs({
       userId: user.userId,
-      keyOrKeyHash: query.keyOrKeyHash,
+      keyOrKeyHash: query.keyHash ?? query.keyOrKeyHash!,
       startDate: query.startDate,
       endDate: query.endDate,
     });
