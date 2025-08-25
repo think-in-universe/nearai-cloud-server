@@ -1,0 +1,69 @@
+services:
+  # LiteLLM Gateway server
+  litellm-gateway:
+    image: ghcr.io/berriai/litellm:v1.74.15-stable
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      STORE_MODEL_IN_DB: true
+      DATABASE_URL: ${LITELLM_DATABASE_URL}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      LITELLM_SALT_KEY: ${LITELLM_SALT_KEY}
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+  # NEAR AI Cloud server
+  nearai-cloud-server:
+    image: ghcr.io/nearai-cloud/nearai-cloud-server:${NEAR_AI_CLOUD_DOCKER_IMAGE_SHA}
+    ports:
+      - "3000:3000"
+    environment:
+      ENV: prd
+      PORT: 3000
+      LITELLM_API_URL: http://litellm-gateway:4000
+      LITELLM_ADMIN_KEY: ${LITELLM_MASTER_KEY}
+      LITELLM_SIGNING_KEY: ${LITELLM_SALT_KEY}
+      LITELLM_DB_URL: ${LITELLM_DATABASE_URL}
+      NEAR_AI_CLOUD_DB_URL: ${NEAR_AI_CLOUD_DB_URL}
+      NEAR_AI_CLOUD_DB_DIRECT_URL: ${NEAR_AI_CLOUD_DB_DIRECT_URL}
+      SUPABASE_API_URL: ${SUPABASE_API_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  # Dstack Ingress container for custom domain
+  # Temporarily commented out to simplify deployment
+  dstack-ingress:
+    image: kvin/dstack-ingress@sha256:2cc3bc50d71faa4d313084237b0f5d1d25963024f2484c7a6414aed075883cdd
+    ports:
+      - "443:443"
+    environment:
+      - DOMAIN=${NEAR_AI_CLOUD_API_DOMAIN}
+      - TARGET_ENDPOINT=http://nearai-cloud-server:3000
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - GATEWAY_DOMAIN=_.${DSTACK_GATEWAY_DOMAIN}
+      - CERTBOT_EMAIL=${CERTBOT_EMAIL}
+      - SET_CAA=true
+    volumes:
+      - /var/run/tappd.sock:/var/run/tappd.sock
+      - cert-data:/etc/letsencrypt
+    restart: unless-stopped
+
+volumes:
+  cert-data:  # Persistent volume for certificates
