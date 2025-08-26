@@ -2,6 +2,7 @@ import axios, { Axios } from 'axios';
 import {
   ApiClientOptions,
   GetOptions,
+  PatchOptions,
   PostOptions,
   RequestOptions,
 } from '../types/api-client';
@@ -95,6 +96,13 @@ export abstract class ApiClient {
     return this.request({
       ...options,
       method: 'post',
+    });
+  }
+
+  protected async patch<T, B = unknown>(options: PatchOptions<B>): Promise<T> {
+    return this.request({
+      ...options,
+      method: 'patch',
     });
   }
 }

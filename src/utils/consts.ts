@@ -10,6 +10,7 @@ export const INPUT_LIMITS = {
   MIN_PAGE: 1,
   MIN_PAGE_SIZE: 1,
   MAX_PAGE_SIZE: 100,
+  MODEL_FORMAT: /^[a-zA-Z0-9_\-.]+$/,
 } as const;
 
 export const STATUS_CODES = {

@@ -11,7 +11,7 @@ export type ApiClientOptions = {
 
 export type RequestOptions<Q, B> = {
   path: string;
-  method: 'get' | 'post';
+  method: 'get' | 'post' | 'patch';
   query?: Q;
   body?: B;
   headers?: Record<string, string | undefined>;
@@ -26,6 +26,13 @@ export type GetOptions<Q> = {
 };
 
 export type PostOptions<B> = {
+  path: string;
+  body?: B;
+  headers?: Record<string, string | undefined>;
+  responseType?: 'stream';
+};
+
+export type PatchOptions<B> = {
   path: string;
   body?: B;
   headers?: Record<string, string | undefined>;

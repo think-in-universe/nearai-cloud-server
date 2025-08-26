@@ -14,6 +14,7 @@ import {
   LitellmApiClient,
 } from '../../services/litellm-api-client';
 import { Key, User } from '../../types/litellm-api-client';
+import { config } from '../../config';
 
 export type SupabaseAuth = {
   supabaseUser: SupabaseUser;
@@ -75,6 +76,11 @@ export const litellmServiceAccountAuthMiddleware: RequestHandler = async (
   next,
 ) => {
   await authorizeLitellmServiceAccount(req.headers.authorization);
+  next();
+};
+
+export const adminAuthMiddleware: RequestHandler = async (req, res, next) => {
+  authorizeAdmin(req.headers.authorization);
   next();
 };
 
@@ -209,6 +215,31 @@ export async function authorizeLitellmServiceAccount(authorization?: string) {
     throw createOpenAiHttpError({
       status: STATUS_CODES.FORBIDDEN,
       message: 'Service account is blocked',
+    });
+  }
+}
+
+export function authorizeAdmin(authorization?: string) {
+  if (!authorization) {
+    throw createOpenAiHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: 'Missing authorization token',
+    });
+  }
+
+  if (!authorization.startsWith(BEARER_TOKEN_PREFIX)) {
+    throw createOpenAiHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: `Authorization token must start with '${BEARER_TOKEN_PREFIX}'`,
+    });
+  }
+
+  const token = authorization.slice(BEARER_TOKEN_PREFIX.length);
+
+  if (token !== config.litellm.adminKey) {
+    throw createOpenAiHttpError({
+      status: STATUS_CODES.FORBIDDEN,
+      message: 'Only admin can access this endpoint',
     });
   }
 }

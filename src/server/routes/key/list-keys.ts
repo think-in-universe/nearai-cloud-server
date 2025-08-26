@@ -29,7 +29,6 @@ const inputSchema = v.object({
 const outputSchema = v.object({
   keys: v.array(
     v.object({
-      keyOrKeyHash: v.string(),
       keyHash: v.string(),
       keyName: v.string(),
       keyAlias: v.nullable(v.string()),
@@ -38,10 +37,7 @@ const outputSchema = v.object({
       userId: v.nullable(v.string()),
       rpmLimit: v.nullable(v.number()),
       tpmLimit: v.nullable(v.number()),
-      budgetId: v.nullable(v.string()),
       maxBudget: v.nullable(v.number()),
-      budgetDuration: v.nullable(v.string()),
-      budgetResetAt: v.nullable(v.string()),
       blocked: v.nullable(v.boolean()),
       createdAt: v.string(),
       metadata: v.record(v.string(), v.unknown()),
@@ -66,8 +62,6 @@ export const listKeys = createRouteResolver({
       userId: user.userId,
       page: query.page,
       pageSize: query.pageSize,
-      sortBy: 'created_at',
-      sortOrder: 'desc',
     });
 
     return {
@@ -78,7 +72,6 @@ export const listKeys = createRouteResolver({
             key.userId && key.keyAlias
               ? toShortKeyAlias(key.userId, key.keyAlias)
               : key.keyAlias,
-          keyOrKeyHash: key.keyHash,
         };
       }),
       totalKeys: keys.totalKeys,

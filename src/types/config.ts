@@ -1,5 +1,5 @@
 export type Config = {
-  isDev?: boolean;
+  isDev: boolean;
   supabase: {
     apiUrl: string;
     anonKey: string;

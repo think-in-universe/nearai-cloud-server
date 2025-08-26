@@ -10,6 +10,7 @@ import {
 } from '../utils/envs';
 
 const config: Config = {
+  isDev: false,
   supabase: {
     apiUrl: ENV_SUPABASE_API_URL,
     anonKey: ENV_SUPABASE_ANON_KEY,

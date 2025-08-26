@@ -11,7 +11,6 @@ import { createRouteResolver } from '../../middlewares/route-resolver';
 import { createOpenAiHttpError } from '../../../utils/error';
 import { toFullKeyAlias } from '../../../utils/common';
 
-/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 const inputSchema = v.object({
   keyHash: v.pipe(v.string(), v.hash([INPUT_LIMITS.KEY_HASH_TYPE])),
   keyAlias: v.optional(
@@ -21,37 +20,17 @@ const inputSchema = v.object({
   blocked: v.optional(v.boolean()),
 });
 
-/**
- * @deprecated
- */
-const inputSchemaLegacy = v.object({
-  keyOrKeyHash: v.optional(v.string()),
-  keyHash: v.optional(v.pipe(v.string(), v.hash([INPUT_LIMITS.KEY_HASH_TYPE]))),
-  keyAlias: v.optional(
-    v.pipe(v.string(), v.maxLength(INPUT_LIMITS.KEY_ALIAS_MAX_LENGTH)),
-  ),
-  maxBudget: v.optional(v.number()),
-  blocked: v.optional(v.boolean()),
-});
-
 export const updateKey = createRouteResolver({
   inputs: {
-    body: inputSchemaLegacy,
+    body: inputSchema,
   },
   middlewares: [
     authMiddleware,
     async (req, res, next, { body }) => {
       const { user }: Auth = ctx.get(CTX_GLOBAL_KEYS.AUTH);
 
-      if (!body.keyHash && !body.keyOrKeyHash) {
-        throw createOpenAiHttpError({
-          status: STATUS_CODES.BAD_REQUEST,
-          message: 'Missing keyHash',
-        });
-      }
-
       const key = await adminLitellmApiClient.getKey({
-        keyOrKeyHash: body.keyHash ?? body.keyOrKeyHash!,
+        keyOrKeyHash: body.keyHash,
       });
 
       if (!key) {
@@ -76,7 +55,7 @@ export const updateKey = createRouteResolver({
     const { user }: Auth = ctx.get(CTX_GLOBAL_KEYS.AUTH);
 
     await adminLitellmApiClient.updateKey({
-      keyOrKeyHash: body.keyHash ?? body.keyOrKeyHash!,
+      keyOrKeyHash: body.keyHash,
       keyAlias: body.keyAlias
         ? toFullKeyAlias(user.userId, body.keyAlias)
         : undefined,
