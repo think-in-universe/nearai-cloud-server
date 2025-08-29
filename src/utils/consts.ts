@@ -4,6 +4,10 @@ export const BEARER_TOKEN_PREFIX = 'Bearer ';
 
 export const LITELLM_KEY_PREFIX = 'sk-';
 
+export const LIST_MODELS_CACHE_TTL = 10 * 60 * 1000;
+
+export const LIST_MODELS_CACHE_KEY_PREFIX = 'Models:';
+
 export const INPUT_LIMITS = {
   KEY_HASH_TYPE: 'sha256',
   KEY_ALIAS_MAX_LENGTH: 256,

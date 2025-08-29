@@ -240,6 +240,7 @@ export type DeleteModelParams = {
 export type ListModelsPaginationParams = {
   page?: number;
   pageSize?: number;
+  cache?: boolean;
 };
 
 export type ListModelsPaginationResponse = {
@@ -263,7 +264,7 @@ export type Model = {
   model: string;
   providerModelName: string;
   providerName: string;
-  credentialName: string;
+  credentialName?: string;
   inputCostPerToken: number;
   outputCostPerToken: number;
   metadata: {

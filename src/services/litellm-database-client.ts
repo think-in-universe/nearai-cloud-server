@@ -134,7 +134,7 @@ export class LitellmDatabaseClient {
         litellm_params: v.object({
           model: v.string(),
           custom_llm_provider: v.string(),
-          litellm_credential_name: v.string(),
+          litellm_credential_name: v.optional(v.string()),
           input_cost_per_token: v.optional(v.number(), 0),
           output_cost_per_token: v.optional(v.number(), 0),
         }),

@@ -18,7 +18,7 @@ const outputSchema = v.nullable(
     model: v.string(),
     providerModelName: v.string(),
     providerName: v.string(),
-    credentialName: v.string(),
+    credentialName: v.optional(v.string()),
     inputCostPerToken: v.number(),
     outputCostPerToken: v.number(),
     metadata: v.object({
