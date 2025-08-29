@@ -4,6 +4,7 @@ import ctx from 'express-http-context';
 import {
   BEARER_TOKEN_PREFIX,
   CTX_GLOBAL_KEYS,
+  LITELLM_KEY_PREFIX,
   STATUS_CODES,
 } from '../../utils/consts';
 import { createSupabaseClient } from '../../services/supabase';
@@ -147,6 +148,13 @@ async function authorizeKey(authorization?: string): Promise<KeyAuth> {
 
   const token = authorization.slice(BEARER_TOKEN_PREFIX.length);
 
+  if (!token.startsWith(LITELLM_KEY_PREFIX)) {
+    throw createOpenAiHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: 'Invalid authorization token',
+    });
+  }
+
   let key: Key | null;
 
   try {
@@ -189,9 +197,24 @@ export async function authorizeLitellmServiceAccount(authorization?: string) {
 
   const token = authorization.slice(BEARER_TOKEN_PREFIX.length);
 
-  const key = await adminLitellmApiClient.getKey({
-    keyOrKeyHash: token,
-  });
+  if (!token.startsWith(LITELLM_KEY_PREFIX)) {
+    throw createOpenAiHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: 'Invalid authorization token',
+    });
+  }
+
+  let key: Key | null;
+
+  try {
+    key = await adminLitellmApiClient.getKey({ keyOrKeyHash: token });
+  } catch (e: unknown) {
+    throw createOpenAiHttpError({
+      status: STATUS_CODES.UNAUTHORIZED,
+      message: 'Failed to authorize', // Override with simple error message
+      cause: e,
+    });
+  }
 
   if (!key) {
     throw createOpenAiHttpError({
