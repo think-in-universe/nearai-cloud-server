@@ -147,12 +147,10 @@ async function authorizeKey(authorization?: string): Promise<KeyAuth> {
 
   const token = authorization.slice(BEARER_TOKEN_PREFIX.length);
 
-  const litellmApiClient = createLitellmApiClient(token);
-
   let key: Key | null;
 
   try {
-    key = await litellmApiClient.getKey({ keyOrKeyHash: token });
+    key = await adminLitellmApiClient.getKey({ keyOrKeyHash: token });
   } catch (e: unknown) {
     throw createOpenAiHttpError({
       status: STATUS_CODES.UNAUTHORIZED,
@@ -170,7 +168,7 @@ async function authorizeKey(authorization?: string): Promise<KeyAuth> {
 
   return {
     key,
-    litellmApiClient,
+    litellmApiClient: createLitellmApiClient(token),
   };
 }
 
@@ -191,9 +189,7 @@ export async function authorizeLitellmServiceAccount(authorization?: string) {
 
   const token = authorization.slice(BEARER_TOKEN_PREFIX.length);
 
-  const client = createLitellmApiClient(token);
-
-  const key = await client.getKey({
+  const key = await adminLitellmApiClient.getKey({
     keyOrKeyHash: token,
   });
 
