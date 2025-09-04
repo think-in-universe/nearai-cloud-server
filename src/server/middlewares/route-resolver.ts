@@ -82,6 +82,8 @@ export function createRouteResolver<
       res.setHeader('cache-control', 'no-cache');
       res.setHeader('connection', 'keep-alive');
       output.pipe(res);
+    } else if (typeof output === 'object') {
+      res.json(output);
     } else {
       res.send(output);
     }

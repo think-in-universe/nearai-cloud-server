@@ -16,6 +16,7 @@ import {
 } from '../../services/litellm-api-client';
 import { Key, User } from '../../types/litellm-api-client';
 import { config } from '../../config';
+import { logger } from '../../services/logger';
 
 export type SupabaseAuth = {
   supabaseUser: SupabaseUser;
@@ -36,12 +37,20 @@ export const supabaseAuthMiddleware: RequestHandler = async (
   res,
   next,
 ) => {
+  const start = Date.now();
   const supabaseAuth = await authorizeSupabase(req.headers.authorization);
   ctx.set(CTX_GLOBAL_KEYS.SUPABASE_AUTH, supabaseAuth);
+  if (config.isDev) {
+    logger.info(
+      `The authorization took ${(Date.now() - start) / 1000} seconds`,
+    );
+  }
   next();
 };
 
 export const authMiddleware: RequestHandler = async (req, res, next) => {
+  const start = Date.now();
+
   const { supabaseUser } = await authorizeSupabase(req.headers.authorization);
 
   const user = await adminLitellmApiClient.getUser({
@@ -62,12 +71,27 @@ export const authMiddleware: RequestHandler = async (req, res, next) => {
 
   ctx.set(CTX_GLOBAL_KEYS.AUTH, auth);
 
+  if (config.isDev) {
+    logger.info(
+      `The authorization took ${(Date.now() - start) / 1000} seconds`,
+    );
+  }
+
   next();
 };
 
 export const keyAuthMiddleware: RequestHandler = async (req, res, next) => {
+  const start = Date.now();
+
   const keyAuth = await authorizeKey(req.headers.authorization);
   ctx.set(CTX_GLOBAL_KEYS.KEY_AUTH, keyAuth);
+
+  if (config.isDev) {
+    logger.info(
+      `The authorization took ${(Date.now() - start) / 1000} seconds`,
+    );
+  }
+
   next();
 };
 
@@ -76,12 +100,30 @@ export const litellmServiceAccountAuthMiddleware: RequestHandler = async (
   res,
   next,
 ) => {
+  const start = Date.now();
+
   await authorizeLitellmServiceAccount(req.headers.authorization);
+
+  if (config.isDev) {
+    logger.info(
+      `The authorization took ${(Date.now() - start) / 1000} seconds`,
+    );
+  }
+
   next();
 };
 
 export const adminAuthMiddleware: RequestHandler = async (req, res, next) => {
+  const start = Date.now();
+
   authorizeAdmin(req.headers.authorization);
+
+  if (config.isDev) {
+    logger.info(
+      `The authorization took ${(Date.now() - start) / 1000} seconds`,
+    );
+  }
+
   next();
 };
 
