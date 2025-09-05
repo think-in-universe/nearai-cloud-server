@@ -124,17 +124,35 @@ export class LitellmDatabaseClient {
       orderBy: {
         created_at: 'desc',
       },
+      distinct: 'model_name',
     });
 
-    const totalModels = await this.client.liteLLM_ProxyModelTable.count();
+    const [{ count: totalModels }] = await this.client.$queryRaw<
+      { count: bigint }[]
+    >`
+      SELECT COUNT(DISTINCT model_name) from "LiteLLM_ProxyModelTable";
+    `;
 
     const schema = v.array(
       v.object({
         model_name: v.string(),
         litellm_params: v.object({
-          model: v.string(),
-          custom_llm_provider: v.string(),
-          litellm_credential_name: v.optional(v.string()),
+          model: v.pipe(
+            v.string(),
+            v.transform((model) => litellmDecryptValue(model)),
+          ),
+          custom_llm_provider: v.pipe(
+            v.string(),
+            v.transform((provider) => litellmDecryptValue(provider)),
+          ),
+          litellm_credential_name: v.optional(
+            v.pipe(
+              v.string(),
+              v.transform((credentialName) =>
+                litellmDecryptValue(credentialName),
+              ),
+            ),
+          ),
           input_cost_per_token: v.optional(v.number(), 0),
           output_cost_per_token: v.optional(v.number(), 0),
         }),
@@ -155,7 +173,7 @@ export class LitellmDatabaseClient {
 
     return {
       models: v.parse(schema, proxyModels),
-      totalModels,
+      totalModels: Number(totalModels),
     };
   }
 }
