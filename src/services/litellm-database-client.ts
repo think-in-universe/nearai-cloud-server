@@ -15,12 +15,26 @@ export class LitellmDatabaseClient {
     this.client = new PrismaClient();
   }
 
-  async getInternalModelParams(
-    modelName: string,
-  ): Promise<InternalModelParams | null> {
-    const proxyModel = await this.client.liteLLM_ProxyModelTable.findFirst({
+  async getModelIdByChatId(chatId: string): Promise<string | null> {
+    const log = await this.client.liteLLM_SpendLogs.findUnique({
       where: {
-        model_name: modelName,
+        request_id: chatId,
+      },
+    });
+
+    if (!log) {
+      return null;
+    }
+
+    return log.model_id;
+  }
+
+  async getInternalModelParams(
+    modelId: string,
+  ): Promise<InternalModelParams | null> {
+    const proxyModel = await this.client.liteLLM_ProxyModelTable.findUnique({
+      where: {
+        model_id: modelId,
       },
     });
 
@@ -28,6 +42,36 @@ export class LitellmDatabaseClient {
       return null;
     }
 
+    return await this.extractInternalModelParams(proxyModel);
+  }
+
+  async listInternalModelParams(
+    modelName: string,
+  ): Promise<InternalModelParams[]> {
+    const proxyModels = await this.client.liteLLM_ProxyModelTable.findMany({
+      where: {
+        model_name: modelName,
+      },
+      orderBy: {
+        created_at: 'asc',
+      },
+    });
+
+    const internalModelParams: InternalModelParams[] = [];
+
+    for (const proxyModel of proxyModels) {
+      internalModelParams.push(
+        await this.extractInternalModelParams(proxyModel),
+      );
+    }
+
+    return internalModelParams;
+  }
+
+  private async extractInternalModelParams(proxyModel: {
+    model_id: string;
+    litellm_params: unknown;
+  }): Promise<InternalModelParams> {
     const params = v.parse(
       v.object({
         model: v.string(),
@@ -139,6 +183,7 @@ export class LitellmDatabaseClient {
 
     const schema = v.array(
       v.object({
+        model_id: v.string(),
         model_name: v.string(),
         litellm_params: v.object({
           model: v.pipe(

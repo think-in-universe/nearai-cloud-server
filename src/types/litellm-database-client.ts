@@ -11,6 +11,7 @@ export type LitellmCredentialValues = {
 };
 
 export type LitellmProxyModel = {
+  model_id: string;
   model_name: string;
   litellm_params: {
     model: string;
