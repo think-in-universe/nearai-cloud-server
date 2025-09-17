@@ -675,7 +675,9 @@ export class LitellmApiClient extends ApiClient {
   }
 
   async chatCompletions(
-    params: OpenAI.ChatCompletionCreateParams,
+    params: OpenAI.ChatCompletionCreateParams & {
+      extra_headers?: Record<string, string>;
+    },
   ): Promise<OpenAI.ChatCompletion | stream.Readable> {
     return this.post({
       path: '/chat/completions',
