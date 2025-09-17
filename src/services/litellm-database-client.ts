@@ -5,6 +5,7 @@ import {
   InternalModelParams,
   LitellmCredentialValues,
   LitellmProxyModel,
+  LiteLLMSpendLog,
 } from '../types/litellm-database-client';
 
 export class LitellmDatabaseClient {
@@ -111,10 +112,13 @@ export class LitellmDatabaseClient {
     return proxyModel.model_id;
   }
 
-  async listModels(
-    offset: number,
-    limit: number,
-  ): Promise<{
+  async listModels({
+    offset,
+    limit,
+  }: {
+    offset: number;
+    limit: number;
+  }): Promise<{
     models: LitellmProxyModel[];
     totalModels: number;
   }> {
@@ -174,6 +178,82 @@ export class LitellmDatabaseClient {
     return {
       models: v.parse(schema, proxyModels),
       totalModels: Number(totalModels),
+    };
+  }
+
+  async getSpendLogs({
+    userId,
+    keyHash,
+    startDate,
+    endDate,
+    offset,
+    limit,
+  }: {
+    userId: string;
+    keyHash?: string;
+    startDate?: string;
+    endDate?: string;
+    offset?: number;
+    limit?: number;
+  }): Promise<{
+    spendLogs: LiteLLMSpendLog[];
+    totalSpendLogs: number;
+  }> {
+    const [spendLogs, totalSpendLogs] = await Promise.all([
+      this.client.liteLLM_SpendLogs.findMany({
+        skip: offset,
+        take: limit,
+        where: {
+          user: userId,
+          api_key: keyHash,
+          startTime: {
+            gte: startDate ? new Date(startDate) : undefined,
+            lt: endDate ? new Date(endDate) : undefined,
+          },
+        },
+        orderBy: {
+          startTime: 'desc',
+        },
+      }),
+      this.client.liteLLM_SpendLogs.count({
+        where: {
+          user: userId,
+          api_key: keyHash,
+          startTime: {
+            gte: startDate ? new Date(startDate) : undefined,
+            lt: endDate ? new Date(endDate) : undefined,
+          },
+        },
+      }),
+    ]);
+
+    const schema = v.array(
+      v.object({
+        request_id: v.string(),
+        user: v.string(),
+        api_key: v.string(),
+        status: v.string(),
+        call_type: v.string(),
+        spend: v.number(),
+        prompt_tokens: v.number(),
+        completion_tokens: v.number(),
+        total_tokens: v.number(),
+        model_id: v.string(),
+        model_group: v.string(),
+        startTime: v.pipe(
+          v.date(),
+          v.transform((d) => d.toISOString()),
+        ),
+        endTime: v.pipe(
+          v.date(),
+          v.transform((d) => d.toISOString()),
+        ),
+      }),
+    );
+
+    return {
+      spendLogs: v.parse(schema, spendLogs),
+      totalSpendLogs,
     };
   }
 }

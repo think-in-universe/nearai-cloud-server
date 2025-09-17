@@ -30,3 +30,19 @@ export type LitellmProxyModel = {
     };
   };
 };
+
+export type LiteLLMSpendLog = {
+  request_id: string;
+  user: string;
+  api_key: string;
+  status: string;
+  call_type: string;
+  spend: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  model_id: string;
+  model_group: string;
+  startTime: string;
+  endTime: string;
+};

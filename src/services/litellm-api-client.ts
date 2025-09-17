@@ -36,6 +36,8 @@ import {
   UpdateTeamParams,
   ListTeamsParams,
   ListTeamsResponse,
+  GetSpendLogsPaginationParams,
+  GetSpendLogsPaginationResponse,
 } from '../types/litellm-api-client';
 import { OpenAI } from 'openai/client';
 import stream from 'stream';
@@ -615,6 +617,49 @@ export class LitellmApiClient extends ApiClient {
     };
   }
 
+  async getSpendLogsPagination({
+    userId,
+    keyOrKeyHash,
+    startDate,
+    endDate,
+    page = 1,
+    pageSize = 10,
+  }: GetSpendLogsPaginationParams): Promise<GetSpendLogsPaginationResponse> {
+    const { spendLogs, totalSpendLogs } =
+      await litellmDatabaseClient.getSpendLogs({
+        userId,
+        keyHash: keyOrKeyHash ? litellmKeyHash(keyOrKeyHash) : undefined,
+        startDate,
+        endDate,
+        offset: (page - 1) * pageSize,
+        limit: pageSize,
+      });
+
+    return {
+      spendLogs: spendLogs.map((spendLog) => {
+        return {
+          requestId: spendLog.request_id,
+          userId: spendLog.user,
+          keyHash: spendLog.api_key,
+          status: spendLog.status,
+          callType: spendLog.call_type,
+          spend: spendLog.spend,
+          promptTokens: spendLog.prompt_tokens,
+          completionTokens: spendLog.completion_tokens,
+          totalTokens: spendLog.total_tokens,
+          modelId: spendLog.model_id,
+          model: spendLog.model_group,
+          startTime: spendLog.startTime,
+          endTime: spendLog.endTime,
+        };
+      }),
+      totalSpendLogs,
+      page,
+      pageSize,
+      totalPages: Math.max(Math.ceil(totalSpendLogs / pageSize), 1),
+    };
+  }
+
   async getSpendLogs({
     userId,
     keyOrKeyHash,
@@ -854,10 +899,10 @@ export class LitellmApiClient extends ApiClient {
       }
     }
 
-    const { models, totalModels } = await litellmDatabaseClient.listModels(
-      (page - 1) * pageSize,
-      pageSize,
-    );
+    const { models, totalModels } = await litellmDatabaseClient.listModels({
+      offset: (page - 1) * pageSize,
+      limit: pageSize,
+    });
 
     const response = {
       models: models.map((model) => {
@@ -884,7 +929,7 @@ export class LitellmApiClient extends ApiClient {
       totalModels,
       page,
       pageSize,
-      totalPages: Math.ceil(totalModels / pageSize),
+      totalPages: Math.max(Math.ceil(totalModels / pageSize), 1),
     };
 
     if (cache) {

@@ -9,24 +9,47 @@ const inputSchema = v.object({
   keyHash: v.pipe(v.string(), v.hash([INPUT_LIMITS.KEY_HASH_TYPE])),
   startDate: v.optional(v.pipe(v.string(), v.isoDate())),
   endDate: v.optional(v.pipe(v.string(), v.isoDate())),
+  page: v.optional(
+    v.pipe(
+      v.string(),
+      v.transform((page) => Number(page)),
+      v.integer(),
+      v.minValue(INPUT_LIMITS.MIN_PAGE),
+    ),
+  ),
+  pageSize: v.optional(
+    v.pipe(
+      v.string(),
+      v.transform((pageSize) => Number(pageSize)),
+      v.integer(),
+      v.minValue(INPUT_LIMITS.MIN_PAGE_SIZE),
+      v.maxValue(INPUT_LIMITS.MAX_PAGE_SIZE),
+    ),
+  ),
 });
 
-const outputSchema = v.array(
-  v.object({
-    userId: v.string(),
-    keyHash: v.string(),
-    status: v.string(),
-    callType: v.string(),
-    spend: v.number(),
-    promptTokens: v.number(),
-    completionTokens: v.number(),
-    totalTokens: v.number(),
-    modelId: v.string(),
-    model: v.string(),
-    startTime: v.string(),
-    endTime: v.string(),
-  }),
-);
+const outputSchema = v.object({
+  spendLogs: v.array(
+    v.object({
+      userId: v.string(),
+      keyHash: v.string(),
+      status: v.string(),
+      callType: v.string(),
+      spend: v.number(),
+      promptTokens: v.number(),
+      completionTokens: v.number(),
+      totalTokens: v.number(),
+      modelId: v.string(),
+      model: v.string(),
+      startTime: v.string(),
+      endTime: v.string(),
+    }),
+  ),
+  totalSpendLogs: v.number(),
+  page: v.number(),
+  pageSize: v.number(),
+  totalPages: v.number(),
+});
 
 export const getSpendLogs = createRouteResolver({
   inputs: {
@@ -37,29 +60,13 @@ export const getSpendLogs = createRouteResolver({
   resolve: async ({ inputs: { query } }) => {
     const { user }: Auth = ctx.get(CTX_GLOBAL_KEYS.AUTH);
 
-    const logs = await adminLitellmApiClient.getSpendLogs({
+    return await adminLitellmApiClient.getSpendLogsPagination({
       userId: user.userId,
       keyOrKeyHash: query.keyHash,
       startDate: query.startDate,
       endDate: query.endDate,
-    });
-
-    return logs.map((log) => {
-      return {
-        requestId: log.requestId,
-        userId: log.userId,
-        keyHash: log.keyHash,
-        status: log.status,
-        callType: log.callType,
-        spend: log.spend,
-        promptTokens: log.promptTokens,
-        completionTokens: log.completionTokens,
-        totalTokens: log.totalTokens,
-        modelId: log.modelId,
-        model: log.model,
-        startTime: log.startTime,
-        endTime: log.endTime,
-      };
+      page: query.page,
+      pageSize: query.pageSize,
     });
   },
 });

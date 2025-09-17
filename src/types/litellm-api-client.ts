@@ -173,6 +173,23 @@ export type ListKeysResponse = {
   totalPages: number;
 };
 
+export type GetSpendLogsPaginationParams = {
+  userId: string;
+  keyOrKeyHash?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type GetSpendLogsPaginationResponse = {
+  spendLogs: SpendLog[];
+  totalSpendLogs: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
 export type GetSpendLogsParams = {
   userId: string;
   keyOrKeyHash?: string;
