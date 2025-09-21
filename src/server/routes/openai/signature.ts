@@ -9,7 +9,6 @@ import { createPrivateLlmApiClient } from '../../../services/private-llm-api-cli
 import { InternalModelParams } from '../../../types/litellm-database-client';
 import { nearAiCloudDatabaseClient } from '../../../services/nearai-cloud-database-client';
 import { logger } from '../../../services/logger';
-import { adminLitellmApiClient } from '../../../services/litellm-api-client';
 
 const paramsInputSchema = v.object({
   chat_id: v.string(),
@@ -35,77 +34,87 @@ export const signature = createRouteResolver({
   output: outputSchema,
   middlewares: [
     keyAuthMiddleware,
-    async (req, res, next, { params, query }) => {
-      const modelId = await litellmDatabaseClient.getModelIdByChatId(
-        params.chat_id,
-      );
+    async (req, res, next, { query }) => {
+      const modelParamsList =
+        await litellmDatabaseClient.listInternalModelParams(query.model);
 
-      if (!modelId) {
-        throw createOpenAiHttpError({
-          status: STATUS_CODES.NOT_FOUND,
-          message: 'Chat id not found',
-        });
-      }
-
-      const model = await adminLitellmApiClient.getModel({ modelId });
-
-      if (!model || model.model !== query.model) {
-        throw createOpenAiHttpError({
-          status: STATUS_CODES.BAD_REQUEST,
-          message: `The model ${query.model} doesn't match with the chat ID`,
-        });
-      }
-
-      const modelParams =
-        await litellmDatabaseClient.getInternalModelParams(modelId);
-
-      if (!modelParams) {
+      if (modelParamsList.length === 0) {
         throw createOpenAiHttpError({
           status: STATUS_CODES.BAD_REQUEST,
           message: 'Invalid model',
         });
       }
 
-      ctx.set('modelParams', modelParams);
+      ctx.set('modelParamsList', modelParamsList);
 
       next();
     },
   ],
   resolve: async ({ inputs: { params, query } }) => {
-    const modelParams: InternalModelParams = ctx.get('modelParams');
+    const modelParamsList: InternalModelParams[] = ctx.get('modelParamsList');
 
-    const cache = await nearAiCloudDatabaseClient.getSignature(
-      modelParams.modelId,
+    const cache = await nearAiCloudDatabaseClient.getSignatures(
       params.chat_id,
       query.signing_algo,
     );
 
-    if (cache) {
-      return cache;
+    if (cache.length > 0) {
+      return cache[0];
     }
 
-    const client = createPrivateLlmApiClient(
-      modelParams.apiKey,
-      modelParams.apiUrl,
-    );
+    const signatures = modelParamsList.map((modelParams) => {
+      const client = createPrivateLlmApiClient(
+        modelParams.apiKey,
+        modelParams.apiUrl,
+      );
 
-    const signature = await client.signature({
-      chat_id: params.chat_id,
-      model: modelParams.model,
-      signing_algo: query.signing_algo,
+      const f = async () => {
+        const signature = await client.signature({
+          chat_id: params.chat_id,
+          model: modelParams.model,
+          signing_algo: query.signing_algo,
+        });
+        return {
+          signature,
+          modelParams,
+        };
+      };
+
+      return f();
     });
 
-    nearAiCloudDatabaseClient
-      .setSignature(
-        modelParams.modelId,
-        params.chat_id,
-        modelParams.model,
-        signature,
-      )
-      .catch((reason) => {
-        logger.error(`Failed to set chat message signature: ${reason}`);
-      });
+    try {
+      // In order to solve the problem of not being able to
+      // synchronously query the actual model corresponding
+      // to the chat, we iterate through calling the API of each model
+      const { signature, modelParams } = await Promise.any(signatures);
 
-    return signature;
+      nearAiCloudDatabaseClient
+        .setSignature(
+          modelParams.modelId,
+          params.chat_id,
+          modelParams.model,
+          signature,
+        )
+        .catch((reason) => {
+          logger.error(`Failed to set chat message signature: ${reason}`);
+        });
+
+      return signature;
+    } catch (e: unknown) {
+      if (e instanceof AggregateError) {
+        logger.error(
+          `Failed to get signature: ${JSON.stringify(
+            e.errors.map((error) => `${error}`),
+            undefined,
+            2,
+          )}`,
+        );
+      }
+      throw createOpenAiHttpError({
+        status: STATUS_CODES.NOT_FOUND,
+        message: 'Chat id not found or expired',
+      });
+    }
   },
 });
