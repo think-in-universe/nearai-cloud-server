@@ -8,6 +8,7 @@ import { createPrivateLlmApiClient } from '../../../services/private-llm-api-cli
 import * as ctx from 'express-http-context';
 import { InternalModelParams } from '../../../types/litellm-database-client';
 import { AttestationReport } from '../../../types/privatellm-api-client';
+import { logger } from '../../../services/logger';
 
 const inputSchema = v.object({
   model: v.string(),
@@ -52,29 +53,55 @@ export const attestationReport = createRouteResolver({
   resolve: async () => {
     const modelParamsList: InternalModelParams[] = ctx.get('modelParamsList');
 
-    let allReports: AttestationReport | undefined;
-
-    for (const modelParams of modelParamsList) {
+    const reportPromises = modelParamsList.map((modelParams) => {
       const client = createPrivateLlmApiClient(
         modelParams.apiKey,
         modelParams.apiUrl,
       );
 
-      const report = await client.attestationReport({
-        model: modelParams.model,
-      });
+      const f = async () => {
+        try {
+          return await client.attestationReport({
+            model: modelParams.model,
+          });
+        } catch (e) {
+          logger.error(
+            `Failed to GET /attestation/report. Model Id (${modelParams.modelId}). ${e}`,
+          );
+          return undefined;
+        }
+      };
 
-      if (!allReports) {
-        allReports = report;
+      return f();
+    });
+
+    const reports = await Promise.all(reportPromises);
+
+    let mergedReport: AttestationReport | undefined;
+
+    reports.forEach((report) => {
+      if (!report) {
+        return;
+      }
+
+      if (!mergedReport) {
+        mergedReport = report;
       } else {
         if (report.all_attestations.length > 0) {
-          allReports.all_attestations.push(...report.all_attestations);
+          mergedReport.all_attestations.push(...report.all_attestations);
         } else {
-          allReports.all_attestations.push(report);
+          mergedReport.all_attestations.push(report);
         }
       }
+    });
+
+    if (!mergedReport) {
+      throw createOpenAiHttpError({
+        status: STATUS_CODES.INTERNAL_SERVER_ERROR,
+        message: 'No attestation available',
+      });
     }
 
-    return allReports!;
+    return mergedReport;
   },
 });
