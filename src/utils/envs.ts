@@ -1,19 +1,4 @@
-import { config } from 'dotenv';
-
-config({
-  path: '.env.local',
-  quiet: true,
-});
-
 export const ENV = requiredEnv('ENV');
-
-config({
-  path: `.env.${ENV}`,
-  quiet: true,
-  override: true,
-});
-
-// ------------------------------- Load through dotenv -------------------------------
 
 export const ENV_SUPABASE_API_URL = requiredEnv('SUPABASE_API_URL');
 export const ENV_SUPABASE_ANON_KEY = requiredEnv('SUPABASE_ANON_KEY');
@@ -28,14 +13,12 @@ export const ENV_SLACK_WEBHOOK_URL = optionalEnv('SLACK_WEBHOOK_URL');
 
 // ------------------------------- Helper  -------------------------------------------
 
-function requiredEnv(name: string): string {
+export function requiredEnv(name: string): string {
   return (
-    process.env[name] ||
-    console.error('Error missing:', name) ||
-    process.exit(1)
+    process.env[name] || console.error('Missing env:', name) || process.exit(1)
   );
 }
 
-function optionalEnv(name: string): string | undefined {
+export function optionalEnv(name: string): string | undefined {
   return process.env[name];
 }

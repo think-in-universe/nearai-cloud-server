@@ -68,10 +68,6 @@ typings/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
-.env
-.env.test
-
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 
@@ -113,8 +109,20 @@ dataset/local
 .idea
 
 # Env
+.env
 .env.*
 !.env.example
 
+.env-compose
+.env-compose.*
+!.env-compose.example
+
+.env-phala
+.env-phala.*
+!.env-phala.example
+
 # Prisma
 .prisma/generated
+
+# Phala
+.phala
