@@ -932,7 +932,7 @@ export class LitellmApiClient extends ApiClient {
       totalPages: Math.max(Math.ceil(totalModels / pageSize), 1),
     };
 
-    if (cache) {
+    if (cache && response.models.length > 0) {
       this.setModelsCache(response, page, pageSize);
     }
 
