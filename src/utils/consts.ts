@@ -4,6 +4,8 @@ export const BEARER_TOKEN_PREFIX = 'Bearer ';
 
 export const LITELLM_KEY_PREFIX = 'sk-';
 
+export const ATTESTATION_REPORT_TTL = 10 * 60 * 1000;
+
 export const LIST_MODELS_CACHE_TTL = 10 * 60 * 1000;
 
 export const LIST_MODELS_CACHE_KEY_PREFIX = 'Models:';

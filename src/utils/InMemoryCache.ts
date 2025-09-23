@@ -1,4 +1,6 @@
 export class InMemoryCache<V> {
+  static ENABLE_CACHE_CLEANER = true;
+
   private readonly cache: Map<string, Cache<V>>;
   private readonly timeToLive: number;
   private readonly cleanInterval: number;
@@ -7,21 +9,32 @@ export class InMemoryCache<V> {
     this.cache = new Map();
     this.timeToLive = timeToLive;
     this.cleanInterval = cleanInterval;
-    this.runCleaner();
+
+    if (InMemoryCache.ENABLE_CACHE_CLEANER) {
+      this.runCleaner();
+    }
   }
 
-  private runCleaner() {
-    setInterval(() => {
-      for (const [key, cache] of this.cache.entries()) {
-        if (Date.now() >= cache.expiration) {
-          this.cache.delete(key);
-        }
+  private runCleaner(): NodeJS.Timeout {
+    return setInterval(() => this.clean(), this.cleanInterval);
+  }
+
+  private clean() {
+    for (const [key, cache] of this.cache.entries()) {
+      if (isExpired(cache)) {
+        this.cache.delete(key);
       }
-    }, this.cleanInterval);
+    }
   }
 
   keys(): string[] {
-    return Array.from(this.cache.keys());
+    const keys: string[] = [];
+    this.cache.entries().forEach(([key, cache]) => {
+      if (!isExpired(cache)) {
+        keys.push(key);
+      }
+    });
+    return keys;
   }
 
   get(key: string): V | undefined {
@@ -52,9 +65,17 @@ export class InMemoryCache<V> {
   delete(key: string) {
     this.cache.delete(key);
   }
+
+  clear() {
+    this.cache.clear();
+  }
 }
 
 type Cache<T> = {
   value: T;
   expiration: number;
 };
+
+function isExpired<V>(cache: Cache<V>): boolean {
+  return Date.now() >= cache.expiration;
+}

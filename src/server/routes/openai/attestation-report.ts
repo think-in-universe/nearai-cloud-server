@@ -3,12 +3,15 @@ import { keyAuthMiddleware } from '../../middlewares/auth';
 import * as v from 'valibot';
 import { litellmDatabaseClient } from '../../../services/litellm-database-client';
 import { createOpenAiHttpError } from '../../../utils/error';
-import { STATUS_CODES } from '../../../utils/consts';
+import { ATTESTATION_REPORT_TTL, STATUS_CODES } from '../../../utils/consts';
 import { createPrivateLlmApiClient } from '../../../services/private-llm-api-client';
 import * as ctx from 'express-http-context';
 import { InternalModelParams } from '../../../types/litellm-database-client';
 import { AttestationReport } from '../../../types/privatellm-api-client';
 import { logger } from '../../../services/logger';
+import { InMemoryCache } from '../../../utils/InMemoryCache';
+
+const cache = new InMemoryCache<AttestationReport>(ATTESTATION_REPORT_TTL);
 
 const inputSchema = v.object({
   model: v.string(),
@@ -50,7 +53,12 @@ export const attestationReport = createRouteResolver({
       next();
     },
   ],
-  resolve: async () => {
+  resolve: async ({ inputs: { query } }) => {
+    const report = cache.get(query.model);
+    if (report) {
+      return report;
+    }
+
     const modelParamsList: InternalModelParams[] = ctx.get('modelParamsList');
 
     const reportPromises = modelParamsList.map((modelParams) => {
@@ -101,6 +109,8 @@ export const attestationReport = createRouteResolver({
         message: 'No attestation available',
       });
     }
+
+    cache.set(query.model, mergedReport);
 
     return mergedReport;
   },

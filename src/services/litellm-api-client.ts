@@ -54,11 +54,11 @@ import { litellmDatabaseClient } from './litellm-database-client';
 import { InMemoryCache } from '../utils/InMemoryCache';
 
 export class LitellmApiClient extends ApiClient {
-  cache: InMemoryCache<unknown>;
+  cache: InMemoryCache<ListModelsPaginationResponse>;
 
   constructor(options: ApiClientOptions) {
     super(options);
-    this.cache = new InMemoryCache();
+    this.cache = new InMemoryCache(LIST_MODELS_CACHE_TTL);
   }
 
   async registerUser({ userId, userEmail, teamId }: RegisterUserParams) {
@@ -1119,7 +1119,7 @@ export class LitellmApiClient extends ApiClient {
     pageSize: number,
   ): ListModelsPaginationResponse | undefined {
     const key = this.modelsCacheKey(page, pageSize);
-    return this.cache.getTyped(key);
+    return this.cache.get(key);
   }
 
   private setModelsCache(
@@ -1128,7 +1128,7 @@ export class LitellmApiClient extends ApiClient {
     pageSize: number,
   ) {
     const key = this.modelsCacheKey(page, pageSize);
-    this.cache.set(key, response, LIST_MODELS_CACHE_TTL);
+    this.cache.set(key, response);
   }
 
   private clearModelsCache() {
