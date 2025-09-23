@@ -103,18 +103,19 @@ export const signature = createRouteResolver({
       return signature;
     } catch (e: unknown) {
       if (e instanceof AggregateError) {
-        logger.error(
+        logger.debug(
           `Failed to get signature: ${JSON.stringify(
             e.errors.map((error) => `${error}`),
             undefined,
             2,
           )}`,
         );
+        throw createOpenAiHttpError({
+          status: STATUS_CODES.NOT_FOUND,
+          message: 'Chat id not found or expired',
+        });
       }
-      throw createOpenAiHttpError({
-        status: STATUS_CODES.NOT_FOUND,
-        message: 'Chat id not found or expired',
-      });
+      throw e;
     }
   },
 });

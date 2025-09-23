@@ -65,7 +65,7 @@ export const attestationReport = createRouteResolver({
             model: modelParams.model,
           });
         } catch (e) {
-          logger.error(
+          logger.debug(
             `Failed to GET /attestation/report. Model Id (${modelParams.modelId}). ${e}`,
           );
           return undefined;
