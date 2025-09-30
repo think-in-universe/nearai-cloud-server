@@ -69,6 +69,7 @@ export abstract class ApiClient {
         data: options.body,
         headers: options.headers,
         responseType: options.responseType,
+        timeout: options.timeout,
       });
 
       return res.data;

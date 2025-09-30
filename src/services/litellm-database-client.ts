@@ -7,12 +7,25 @@ import {
   LitellmProxyModel,
   LiteLLMSpendLog,
 } from '../types/litellm-database-client';
+import { InMemoryCache } from '../utils/InMemoryCache';
+import {
+  ROUTER_SETTINGS_CACHE_KEY,
+  ROUTER_SETTINGS_CACHE_TTL,
+} from '../utils/consts';
+
+const routerSettingsSchema = v.object({
+  model_group_alias: v.optional(v.record(v.string(), v.optional(v.string()))),
+});
+
+type RouterSettings = v.InferOutput<typeof routerSettingsSchema>;
 
 export class LitellmDatabaseClient {
   private client: PrismaClient;
+  private routerSettingsCache: InMemoryCache<RouterSettings>;
 
   constructor() {
     this.client = new PrismaClient();
+    this.routerSettingsCache = new InMemoryCache(ROUTER_SETTINGS_CACHE_TTL);
   }
 
   async getModelIdByChatId(chatId: string): Promise<string | null> {
@@ -300,6 +313,40 @@ export class LitellmDatabaseClient {
       spendLogs: v.parse(schema, spendLogs),
       totalSpendLogs,
     };
+  }
+
+  async getRouterSettings(): Promise<RouterSettings> {
+    let routerSettings = this.routerSettingsCache.get(
+      ROUTER_SETTINGS_CACHE_KEY,
+    );
+
+    if (routerSettings) {
+      return routerSettings;
+    }
+
+    const routerSettingsRaw = await this.client.liteLLM_Config.findUnique({
+      where: {
+        param_name: 'router_settings',
+      },
+    });
+
+    if (routerSettingsRaw) {
+      routerSettings = v.parse(
+        routerSettingsSchema,
+        routerSettingsRaw.param_value,
+      );
+    } else {
+      routerSettings = {};
+    }
+
+    this.routerSettingsCache.set(ROUTER_SETTINGS_CACHE_KEY, routerSettings);
+
+    return routerSettings;
+  }
+
+  async getModelAlias(): Promise<Record<string, string | undefined>> {
+    const routerSettings = await this.getRouterSettings();
+    return routerSettings.model_group_alias ?? {};
   }
 }
 

@@ -4,7 +4,7 @@ import * as v from 'valibot';
 import * as ctx from 'express-http-context';
 import { litellmDatabaseClient } from '../../../services/litellm-database-client';
 import { createOpenAiHttpError } from '../../../utils/error';
-import { STATUS_CODES } from '../../../utils/consts';
+import { FETCH_SIGNATURE_TIMEOUT, STATUS_CODES } from '../../../utils/consts';
 import { createPrivateLlmApiClient } from '../../../services/private-llm-api-client';
 import { InternalModelParams } from '../../../types/litellm-database-client';
 import { nearAiCloudDatabaseClient } from '../../../services/nearai-cloud-database-client';
@@ -35,6 +35,9 @@ export const signature = createRouteResolver({
   middlewares: [
     keyAuthMiddleware,
     async (req, res, next, { query }) => {
+      const modelAlias = await litellmDatabaseClient.getModelAlias();
+      query.model = modelAlias[query.model] ?? query.model;
+
       const modelParamsList =
         await litellmDatabaseClient.listInternalModelParams(query.model);
 
@@ -69,11 +72,14 @@ export const signature = createRouteResolver({
       );
 
       const f = async () => {
-        const signature = await client.signature({
-          chat_id: params.chat_id,
-          model: modelParams.model,
-          signing_algo: query.signing_algo,
-        });
+        const signature = await client.signature(
+          {
+            chat_id: params.chat_id,
+            model: modelParams.model,
+            signing_algo: query.signing_algo,
+          },
+          FETCH_SIGNATURE_TIMEOUT,
+        );
         return {
           signature,
           modelParams,

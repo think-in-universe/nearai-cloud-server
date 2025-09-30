@@ -16,6 +16,7 @@ export type RequestOptions<Q, B> = {
   body?: B;
   headers?: Record<string, string | undefined>;
   responseType?: 'stream';
+  timeout?: number;
 };
 
 export type GetOptions<Q> = {
@@ -23,6 +24,7 @@ export type GetOptions<Q> = {
   query?: Q;
   headers?: Record<string, string | undefined>;
   responseType?: 'stream';
+  timeout?: number;
 };
 
 export type PostOptions<B> = {
@@ -30,6 +32,7 @@ export type PostOptions<B> = {
   body?: B;
   headers?: Record<string, string | undefined>;
   responseType?: 'stream';
+  timeout?: number;
 };
 
 export type PatchOptions<B> = {
@@ -37,4 +40,5 @@ export type PatchOptions<B> = {
   body?: B;
   headers?: Record<string, string | undefined>;
   responseType?: 'stream';
+  timeout?: number;
 };

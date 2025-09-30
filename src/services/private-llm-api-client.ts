@@ -12,9 +12,10 @@ export class PrivateLlmApiClient extends ApiClient {
     super(options);
   }
 
-  async attestationReport({
-    model,
-  }: AttestationReportParams): Promise<AttestationReport> {
+  async attestationReport(
+    { model }: AttestationReportParams,
+    timeout?: number,
+  ): Promise<AttestationReport> {
     return this.get<
       AttestationReport,
       {
@@ -25,20 +26,21 @@ export class PrivateLlmApiClient extends ApiClient {
       query: {
         model,
       },
+      timeout,
     });
   }
 
-  async signature({
-    chat_id,
-    model,
-    signing_algo,
-  }: SignatureParams): Promise<Signature> {
+  async signature(
+    { chat_id, model, signing_algo }: SignatureParams,
+    timeout?: number,
+  ): Promise<Signature> {
     return this.get<Signature, Omit<SignatureParams, 'chat_id'>>({
       path: `/signature/${chat_id}`,
       query: {
         model,
         signing_algo,
       },
+      timeout,
     });
   }
 }

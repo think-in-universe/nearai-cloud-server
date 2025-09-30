@@ -3,7 +3,11 @@ import { keyAuthMiddleware } from '../../middlewares/auth';
 import * as v from 'valibot';
 import { litellmDatabaseClient } from '../../../services/litellm-database-client';
 import { createOpenAiHttpError } from '../../../utils/error';
-import { ATTESTATION_REPORT_TTL, STATUS_CODES } from '../../../utils/consts';
+import {
+  ATTESTATION_REPORT_TTL,
+  FETCH_ATTESTATION_REPORT_TIMEOUT,
+  STATUS_CODES,
+} from '../../../utils/consts';
 import { createPrivateLlmApiClient } from '../../../services/private-llm-api-client';
 import * as ctx from 'express-http-context';
 import { InternalModelParams } from '../../../types/litellm-database-client';
@@ -38,6 +42,9 @@ export const attestationReport = createRouteResolver({
   middlewares: [
     keyAuthMiddleware,
     async (req, res, next, { query }) => {
+      const modelAlias = await litellmDatabaseClient.getModelAlias();
+      query.model = modelAlias[query.model] ?? query.model;
+
       const modelParamsList =
         await litellmDatabaseClient.listInternalModelParams(query.model);
 
@@ -69,9 +76,12 @@ export const attestationReport = createRouteResolver({
 
       const f = async () => {
         try {
-          return await client.attestationReport({
-            model: modelParams.model,
-          });
+          return await client.attestationReport(
+            {
+              model: modelParams.model,
+            },
+            FETCH_ATTESTATION_REPORT_TIMEOUT,
+          );
         } catch (e) {
           logger.debug(
             `Failed to GET /attestation/report. Model Id (${modelParams.modelId}). ${e}`,
