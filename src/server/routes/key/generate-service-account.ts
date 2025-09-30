@@ -2,6 +2,7 @@ import { createRouteResolver } from '../../middlewares/route-resolver';
 import { adminLitellmApiClient } from '../../../services/litellm-api-client';
 import * as v from 'valibot';
 import { adminAuthMiddleware } from '../../middlewares/auth';
+import { SERVICE_ACCOUNT_TEAM_ID } from '../../../utils/consts';
 
 const inputSchema = v.object({
   serviceAccountId: v.pipe(v.string(), v.nonEmpty()),
@@ -25,6 +26,7 @@ export const generateServiceAccount = createRouteResolver({
         keyAlias: body.serviceAccountId,
         keyType: 'management',
         models: ['all-team-models'],
+        teamId: SERVICE_ACCOUNT_TEAM_ID,
       },
     );
 
