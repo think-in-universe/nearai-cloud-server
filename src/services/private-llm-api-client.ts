@@ -13,18 +13,24 @@ export class PrivateLlmApiClient extends ApiClient {
   }
 
   async attestationReport(
-    { model }: AttestationReportParams,
+    { model, signing_algo, nonce, signing_address }: AttestationReportParams,
     timeout?: number,
   ): Promise<AttestationReport> {
     return this.get<
       AttestationReport,
       {
         model: string;
+        signing_algo?: string;
+        nonce?: string;
+        signing_address?: string;
       }
     >({
       path: '/attestation/report',
       query: {
         model,
+        signing_algo,
+        nonce,
+        signing_address,
       },
       timeout,
     });

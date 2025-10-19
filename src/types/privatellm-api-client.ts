@@ -1,11 +1,17 @@
 export type AttestationReportParams = {
   model: string;
+  signing_algo?: string;
+  nonce?: string;
+  signing_address?: string;
 };
 
 export type Attestation = {
   signing_address: string;
   intel_quote: string;
   nvidia_payload: string;
+  request_nonce?: string;
+  event_log?: Array<Record<string, unknown>>;
+  info?: Record<string, unknown>;
 };
 
 export type AttestationReport = Attestation & {

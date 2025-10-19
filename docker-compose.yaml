@@ -11,14 +11,6 @@ services:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
       LITELLM_SALT_KEY: ${LITELLM_SALT_KEY}
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 4G
-        reservations:
-          cpus: '1'
-          memory: 2G
 
   # NEAR AI Cloud server
   nearai-cloud-server:
@@ -37,30 +29,27 @@ services:
       SUPABASE_API_URL: ${SUPABASE_API_URL}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
+    volumes:
+      - /var/run/dstack.sock:/var/run/dstack.sock
+      - /var/run/tappd.sock:/var/run/tappd.sock
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
-        reservations:
-          cpus: '1'
-          memory: 1G
 
   # Dstack Ingress container for custom domain
-  # Temporarily commented out to simplify deployment
   dstack-ingress:
-    image: kvin/dstack-ingress@sha256:2cc3bc50d71faa4d313084237b0f5d1d25963024f2484c7a6414aed075883cdd
+    image: robortyan/dstack-ingress@sha256:e46aba89a180c6e2e8a42a5df771dd65a6b73ecb107791e35aa4f3c3a48d896b
     ports:
       - "443:443"
     environment:
       - DOMAIN=${NEAR_AI_CLOUD_API_DOMAIN}
       - TARGET_ENDPOINT=http://nearai-cloud-server:3000
+      - DNS_PROVIDER=cloudflare
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
       - GATEWAY_DOMAIN=_.${DSTACK_GATEWAY_DOMAIN}
       - CERTBOT_EMAIL=${CERTBOT_EMAIL}
+      - TXT_PREFIX=_dstack-app-address
       - SET_CAA=true
     volumes:
+      - /var/run/dstack.sock:/var/run/dstack.sock
       - /var/run/tappd.sock:/var/run/tappd.sock
       - cert-data:/etc/letsencrypt
     restart: unless-stopped

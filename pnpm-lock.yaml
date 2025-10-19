@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@phala/dstack-sdk':
+        specifier: ^0.5.7
+        version: 0.5.7(@noble/hashes@1.8.0)(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@supabase/supabase-js':
         specifier: ^2.50.3
         version: 2.50.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
@@ -640,6 +643,12 @@ packages:
 
   '@phala/dstack-sdk@0.5.4-beta.6':
     resolution: {integrity: sha512-t1colUH3S8YnkwrBIpqjFG7f2fyK9LeRMk6Q0xlUy8gHoCkIpuxXviaOqNmcDsB+bJGwe+PZxnhV3FOGHs3YEg==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      '@noble/hashes': ^1.6.1
+
+  '@phala/dstack-sdk@0.5.7':
+    resolution: {integrity: sha512-yhdH1dIYCeyn/3jp9tIT4aCfOaVtO1cwFcTHKjeLzKeL/XTVWzbyTX1SU6NCN7tKpHWJ9y6Vdht/vcffZYEZnw==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       '@noble/hashes': ^1.6.1
@@ -3560,6 +3569,21 @@ snapshots:
       - zod
 
   '@phala/dstack-sdk@0.5.4-beta.6(@noble/hashes@1.8.0)(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
+      '@noble/hashes': 1.8.0
+      crypto-browserify: 3.12.1
+    optionalDependencies:
+      '@noble/curves': 1.9.7
+      '@solana/web3.js': 1.98.4(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      viem: 2.34.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+    transitivePeerDependencies:
+      - bufferutil
+      - encoding
+      - typescript
+      - utf-8-validate
+      - zod
+
+  '@phala/dstack-sdk@0.5.7(@noble/hashes@1.8.0)(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@noble/hashes': 1.8.0
       crypto-browserify: 3.12.1
