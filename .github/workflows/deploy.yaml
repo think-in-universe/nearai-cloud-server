@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - test
     tags:
       - v*
 
@@ -39,6 +40,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@edfb0fe6204400c56fbfd3feba3fe9ad1adfa345
 
+      - name: Get Git commit timestamps
+        run: echo "TIMESTAMP=$(git log -1 --pretty=%ct)" >> $GITHUB_ENV
+
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@4976231911ebf5f32aad765192d35f942aa48cb8
@@ -51,6 +55,8 @@ jobs:
             ${{ startsWith(github.ref, 'refs/tags/') && format('{0}/{1}:{2}', env.REGISTRY, env.IMAGE_NAME, github.ref_name) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
+        env:
+          SOURCE_DATE_EPOCH: ${{ env.TIMESTAMP }}
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
