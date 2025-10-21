@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - provenance
     tags:
       - v*
 
