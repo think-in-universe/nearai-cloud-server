@@ -49,14 +49,13 @@ jobs:
         with:
           context: .
           push: true
-          labels: |
-            ${{ steps.meta.outputs.labels }}
-            org.opencontainers.image.created=${{ env.TIMESTAMP }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ startsWith(github.ref, 'refs/tags/') && format('{0}/{1}:{2}', env.REGISTRY, env.IMAGE_NAME, github.ref_name) || '' }}
-          labels: ${{ steps.meta.outputs.labels }}
+          labels: |
+            ${{ steps.meta.outputs.labels }}
+            org.opencontainers.image.created=${{ env.TIMESTAMP }}
           platforms: linux/amd64
         env:
           SOURCE_DATE_EPOCH: ${{ env.TIMESTAMP }}
