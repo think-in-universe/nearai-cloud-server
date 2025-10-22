@@ -56,7 +56,7 @@ jobs:
           # cache-to: type=gha,mode=max
           no-cache: true
           push: true
-          build-args: SOURCE_DATE_EPOCH=0
+          build-args: SOURCE_DATE_EPOCH="0"
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
