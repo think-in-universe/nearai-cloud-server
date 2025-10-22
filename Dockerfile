@@ -43,8 +43,8 @@ RUN groupmod -g 1001 node \
 COPY --from=dev --chown=node:node /app/node_modules node_modules
 COPY --from=dev --chown=node:node /app/dist dist
 COPY --from=dev --chown=node:node --chmod=0644 /app/package.json package.json 
-COPY --from=dev --chown=node:node /app/.prisma .prisma && \
-    find /app/.prisma -type f -exec chmod 0664 {} + && \
+COPY --from=dev --chown=node:node /app/.prisma .prisma
+RUN find /app/.prisma -type f -exec chmod 0664 {} + && \
     find /app/.prisma -type d -exec chmod 0775 {} +
 
 USER node
