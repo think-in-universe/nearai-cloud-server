@@ -76,6 +76,10 @@ jobs:
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
 
+      - name: Check folder timestamp inside image
+        run: |
+          docker run --rm ${{ env.IMAGE_NAME }}:latest bash -c "stat -c '%y' /home/node || echo 'Folder not found'"
+
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
         with:
