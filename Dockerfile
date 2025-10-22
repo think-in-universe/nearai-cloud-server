@@ -40,10 +40,12 @@ RUN groupmod -g 1001 node \
     && usermod -u 1001 -g 1001 node
 
 # Copy installed dependencies and built application from the dev stage
-COPY --chown=node:node --from=dev /app/node_modules node_modules
-COPY --chown=node:node --from=dev /app/dist dist
-COPY --chown=node:node --from=dev /app/package.json package.json
-COPY --chown=node:node --from=dev /app/.prisma .prisma
+COPY --from=dev --chown=node:node/app/node_modules node_modules
+COPY --from=dev --chown=node:node /app/dist dist
+COPY --from=dev --chown=node:node --chmod=0644 /app/package.json package.json 
+COPY --from=dev --chown=node:node /app/.prisma .prisma && \
+    find /app/.prisma -type f -exec chmod 0664 {} + && \
+    find /app/.prisma -type d -exec chmod 0775 {} +
 
 USER node
 EXPOSE 3000
