@@ -48,6 +48,8 @@ jobs:
         uses: docker/build-push-action@4976231911ebf5f32aad765192d35f942aa48cb8
         with:
           context: .
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
