@@ -126,3 +126,6 @@ dataset/local
 
 # Phala
 .phala
+
+# Docker build
+.GIT_REV
