@@ -68,6 +68,7 @@ jobs:
           SOURCE_DATE_EPOCH: ${{ env.TIMESTAMP }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
+        outputs: type=docker,rewrite-timestamp=true
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
