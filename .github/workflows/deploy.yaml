@@ -64,11 +64,11 @@ jobs:
             org.opencontainers.image.created=${{ env.TIMESTAMP }}
             org.opencontainers.image.revision=${{ github.sha }}
           platforms: linux/amd64
+          outputs: type=docker,rewrite-timestamp=true
         env:
           SOURCE_DATE_EPOCH: ${{ env.TIMESTAMP }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
-        outputs: type=docker,rewrite-timestamp=true
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
