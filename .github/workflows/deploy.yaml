@@ -43,8 +43,10 @@ jobs:
           name: buildkit_20
           driver-opts: image=moby/buildkit:v0.20.2
 
-      - name: Get Git commit timestamps
-        run: echo "TIMESTAMP=$(git log -1 --pretty=%ct)" >> $GITHUB_ENV
+      - name: Get Git commit timestamps and commit hash
+        run: |
+          echo "TIMESTAMP=$(git log -1 --pretty=%ct)" >> $GITHUB_ENV
+          echo "${{ github.sha }}" > .GIT_REV
 
       - name: Build and push Docker image
         id: push
