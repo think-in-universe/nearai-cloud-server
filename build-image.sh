@@ -30,8 +30,8 @@ touch pinned-packages.txt
 git rev-parse HEAD > .GIT_REV
 TEMP_TAG="nearai-cloud-server-temp:$(date +%s)"
 docker buildx build --builder buildkit_20 --no-cache --build-arg SOURCE_DATE_EPOCH="0" \
+    --output type=oci,dest=./oci.tar,rewrite-timestamp=true \
     --output type=docker,name="$TEMP_TAG",rewrite-timestamp=true .
-    # --output type=oci,dest=./oci.tar,rewrite-timestamp=true \
 
 if [ "$?" -ne 0 ]; then
     echo "Build failed"
@@ -41,27 +41,26 @@ fi
 
 echo "Build completed, manifest digest:"
 echo ""
-skopeo inspect docker-daemon:$TEMP_TAG | jq .Digest
-# skopeo inspect oci-archive:./oci.tar | jq .Digest
+skopeo inspect oci-archive:./oci.tar | jq .Digest
 echo ""
 
-# if [ "$PUSH" = true ]; then
-#     echo "Pushing image to $REPO..."
-#     skopeo copy --insecure-policy oci-archive:./oci.tar docker://"$REPO"
-#     echo "Image pushed successfully to $REPO"
-# else
-#     echo "To push the image to a registry, run:"
-#     echo ""
-#     echo " $0 --push <repo>[:<tag>]"
-#     echo ""
-#     echo "Or use skopeo directly:"
-#     echo ""
-#     echo " skopeo copy --insecure-policy oci-archive:./oci.tar docker://<repo>[:<tag>]"
-#     echo ""
-#     echo " Pushing image to dstacktee org:"
-#     echo " skopeo copy --insecure-policy oci-archive:./oci.tar docker://dstacktee/dstack-ingress:$(date +%Y%m%d) --authfile ~/.docker/config.json"
-# fi
-# echo ""
+if [ "$PUSH" = true ]; then
+    echo "Pushing image to $REPO..."
+    skopeo copy --insecure-policy oci-archive:./oci.tar docker://"$REPO"
+    echo "Image pushed successfully to $REPO"
+else
+    echo "To push the image to a registry, run:"
+    echo ""
+    echo " $0 --push <repo>[:<tag>]"
+    echo ""
+    echo "Or use skopeo directly:"
+    echo ""
+    echo " skopeo copy --insecure-policy oci-archive:./oci.tar docker://<repo>[:<tag>]"
+    echo ""
+    echo " Pushing image to dstacktee org:"
+    echo " skopeo copy --insecure-policy oci-archive:./oci.tar docker://dstacktee/dstack-ingress:$(date +%Y%m%d) --authfile ~/.docker/config.json"
+fi
+echo ""
 
 # Extract package information from the built image
 echo "Extracting package information from built image: $TEMP_TAG"
@@ -70,6 +69,6 @@ docker run --rm --entrypoint bash "$TEMP_TAG" -c "dpkg -l | grep '^ii' | awk '{p
 echo "Package information extracted to pinned-packages.txt ($(wc -l < pinned-packages.txt) packages)"
 
 # Clean up the temporary image from Docker daemon
-# docker rmi "$TEMP_TAG" 2>/dev/null || true
+docker rmi "$TEMP_TAG" 2>/dev/null || true
 
 rm .GIT_REV
